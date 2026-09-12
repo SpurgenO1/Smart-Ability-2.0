@@ -6,10 +6,12 @@
 
 class TherapistViewController {
   constructor() {
-    this.activeTab = 'schedule'; // 'schedule' or 'studio'
+    this.activeTab = 'schedule'; // 'schedule', 'demonstrations', or 'studio'
     this.selectedStudent = null;
     this.selectedPhoneme = getPhonemeById('ka');
     this.studioVocalTract = null;
+    this.demoFilter = 'all';
+    this.demoSearchQuery = '';
 
     // Daily appointments roster
     this.roster = [
@@ -25,6 +27,7 @@ class TherapistViewController {
     this.renderProgressNotification();
     this.renderSchedule();
     this.renderStruggleAlerts();
+    this.renderDemonstrationPushList();
     this.renderPhonemePalette();
     this.setupEventListeners();
     this.fetchBackendAlerts();
@@ -160,16 +163,24 @@ class TherapistViewController {
     });
 
     const scheduleView = document.getElementById('therapist-schedule-subview');
+    const demoView = document.getElementById('therapist-demonstrations-subview');
     const studioView = document.getElementById('therapist-studio-subview');
 
     if (view === 'schedule') {
-      scheduleView.style.display = 'block';
-      studioView.style.display = 'none';
+      if (scheduleView) scheduleView.style.display = 'block';
+      if (demoView) demoView.style.display = 'none';
+      if (studioView) studioView.style.display = 'none';
       this.renderSchedule();
       this.renderStruggleAlerts();
+    } else if (view === 'demonstrations') {
+      if (scheduleView) scheduleView.style.display = 'none';
+      if (demoView) demoView.style.display = 'block';
+      if (studioView) studioView.style.display = 'none';
+      this.renderDemonstrationPushList();
     } else {
-      scheduleView.style.display = 'none';
-      studioView.style.display = 'block';
+      if (scheduleView) scheduleView.style.display = 'none';
+      if (demoView) demoView.style.display = 'none';
+      if (studioView) studioView.style.display = 'block';
       this.initStudioVideo();
     }
   }
@@ -232,35 +243,36 @@ class TherapistViewController {
     const drawer = document.getElementById('struggle-alert-drawer');
     if (!drawer) return;
 
-    const activeAlerts = window.appState.struggleAlerts.filter(a => !a.resolved);
+    const pendingAlerts = window.appState.struggleAlerts.filter(a => a.status === 'pending' || (!a.resolved && a.status !== 'rejected'));
 
-    if (activeAlerts.length === 0) {
+    if (pendingAlerts.length === 0) {
       drawer.style.display = 'none';
       return;
     }
 
     drawer.style.display = 'flex';
-    const alert = activeAlerts[0]; // Most urgent struggle
+    const first = pendingAlerts[0];
 
     drawer.innerHTML = `
       <div class="alert-drawer-left">
         <div class="alert-icon-beacon">⚠️</div>
         <div class="alert-details">
           <h3>
-            Automated Struggle Alert (5-Failure Rule)
-            <span class="badge-alert">URGENT</span>
+            Automated Struggle Alert Queue (5-Failure Rule)
+            <span class="badge-alert">${pendingAlerts.length} PENDING</span>
           </h3>
           <p>
-            Student <strong>${alert.studentName}</strong> failed 5 consecutive attempts at pronouncing 
-            target letter <strong>'${alert.phonemeSymbol}' (${alert.phonemeName})</strong> during independent practice.
+            Student <strong>${first.studentName}</strong> failed 5 consecutive attempts at 
+            <strong>'${first.phonemeSymbol}' (${first.phonemeName})</strong>. 
+            ${pendingAlerts.length > 1 ? `+${pendingAlerts.length - 1} other student(s) waiting in review queue.` : ''}
           </p>
         </div>
       </div>
       <div class="alert-action-group">
-        <button class="btn-duo btn-coral" id="btn-one-click-push-3d" onclick="window.therapistController.resolveAndUnlock3D(${alert.id}, '${alert.phonemeId}')">
-          🔓 One-Click 3D Push / Unlock
+        <button class="btn-duo btn-coral" id="btn-open-demo-queue" onclick="window.therapistController.switchSubView('demonstrations'); window.soundSFX?.playPop();">
+          🎬 Review & Push Video (${pendingAlerts.length})
         </button>
-        <button class="btn-duo btn-ghost" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')">
+        <button class="btn-duo btn-ghost" onclick="window.therapistController.openStudioForPhoneme('${first.phonemeId}')">
           🔬 Open Studio
         </button>
       </div>
@@ -268,43 +280,232 @@ class TherapistViewController {
   }
 
   /**
-   * One-Click Video Demonstration Push / Unlock Action
+   * Render the comprehensive 5-Failure Student Struggle List with Approve/Reject actions
    */
-  async resolveAndUnlock3D(alertId, phonemeId) {
-    window.soundSFX.playUnlockCheer();
+  renderDemonstrationPushList(filterStatus = null) {
+    if (filterStatus) this.demoFilter = filterStatus;
+    const container = document.getElementById('demonstration-students-list');
+    if (!container) return;
 
+    const allAlerts = window.appState.struggleAlerts || [];
+
+    // Tally counts
+    const failedTotal = allAlerts.length;
+    const pendingAlerts = allAlerts.filter(a => a.status === 'pending' || (!a.resolved && a.status !== 'rejected'));
+    const approvedAlerts = allAlerts.filter(a => a.status === 'approved');
+    const rejectedAlerts = allAlerts.filter(a => a.status === 'rejected');
+
+    // Update metrics UI
+    const failedEl = document.getElementById('metric-failed-count');
+    const pendingEl = document.getElementById('metric-pending-count');
+    const approvedEl = document.getElementById('metric-approved-count');
+    const rejectedEl = document.getElementById('metric-rejected-count');
+    if (failedEl) failedEl.textContent = failedTotal;
+    if (pendingEl) pendingEl.textContent = pendingAlerts.length;
+    if (approvedEl) approvedEl.textContent = approvedAlerts.length;
+    if (rejectedEl) rejectedEl.textContent = rejectedAlerts.length;
+
+    // Update filter tab pills
+    const fAll = document.getElementById('filter-count-all');
+    const fPend = document.getElementById('filter-count-pending');
+    const fAppr = document.getElementById('filter-count-approved');
+    const fRej = document.getElementById('filter-count-rejected');
+    if (fAll) fAll.textContent = failedTotal;
+    if (fPend) fPend.textContent = pendingAlerts.length;
+    if (fAppr) fAppr.textContent = approvedAlerts.length;
+    if (fRej) fRej.textContent = rejectedAlerts.length;
+
+    // Update subnav badge
+    const subnavBadge = document.getElementById('therapist-demo-push-count');
+    if (subnavBadge) {
+      subnavBadge.textContent = pendingAlerts.length;
+      subnavBadge.style.display = pendingAlerts.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    // Filter list
+    let filtered = allAlerts;
+    if (this.demoFilter === 'pending') {
+      filtered = pendingAlerts;
+    } else if (this.demoFilter === 'approved') {
+      filtered = approvedAlerts;
+    } else if (this.demoFilter === 'rejected') {
+      filtered = rejectedAlerts;
+    }
+
+    if (this.demoSearchQuery) {
+      const q = this.demoSearchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        (a.studentName && a.studentName.toLowerCase().includes(q)) ||
+        (a.studentId && a.studentId.toLowerCase().includes(q)) ||
+        (a.phonemeSymbol && a.phonemeSymbol.includes(q)) ||
+        (a.phonemeName && a.phonemeName.toLowerCase().includes(q))
+      );
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="demo-empty-state">
+          <div class="empty-icon">✨</div>
+          <h4>No Learners In This View</h4>
+          <p>No student struggle cases match this filter. Switch tabs to see all 5-failure cases.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    filtered.forEach(alert => {
+      const card = document.createElement('div');
+      const isApproved = alert.status === 'approved';
+      const isRejected = alert.status === 'rejected';
+      const isPending = !isApproved && !isRejected;
+
+      card.className = `demo-student-card ${isApproved ? 'status-approved' : isRejected ? 'status-rejected' : 'status-pending'}`;
+
+      const phonemeObj = getPhonemeById(alert.phonemeId) || { symbol: alert.phonemeSymbol || 'क', name: alert.phonemeName || 'Target' };
+
+      card.innerHTML = `
+        <div class="demo-card-header">
+          <div class="demo-student-identity">
+            <div class="student-avatar-badge">${isApproved ? '🌟' : isRejected ? '📋' : '🧒'}</div>
+            <div>
+              <div class="demo-student-name">
+                ${alert.studentName || 'Aarav Sharma'}
+                <span class="demo-student-id">${alert.studentId || 'ORB-4819'}</span>
+                <span class="demo-student-age">${alert.age || '6 yrs'}</span>
+              </div>
+              <div class="demo-student-sub">
+                Target Letter: <strong>'${phonemeObj.symbol}' (${phonemeObj.name})</strong> • Detected ${alert.timestamp || 'Today'}
+              </div>
+            </div>
+          </div>
+
+          <div class="demo-status-pill ${isApproved ? 'approved' : isRejected ? 'rejected' : 'pending'}">
+            ${isApproved ? '✅ Approved & Pushed' : isRejected ? '❌ Push Rejected' : '⚠️ 5 Failures • Needs Approval'}
+          </div>
+        </div>
+
+        <div class="demo-card-body">
+          <!-- Left: Clinical Struggle Diagnostic Summary -->
+          <div class="demo-struggle-summary">
+            <div class="struggle-tag-row">
+              <span class="struggle-warning-tag">⚠️ 5 / 5 Attempts Failed</span>
+              <span class="struggle-deficit-tag">Clinical Articulation Struggle</span>
+            </div>
+            <p class="struggle-deficit-desc">
+              <strong>Articulatory Deficit:</strong> ${alert.deficitReason || `Struggled with tongue posture during 5 consecutive repetitions of '${phonemeObj.symbol}'.`}
+            </p>
+            ${isApproved ? `
+              <div class="approved-isolated-notice">
+                <span class="lock-icon">🔒</span>
+                <span>Exclusive Access: This demonstration video is unlocked <strong>ONLY for ${alert.studentName}</strong> (${alert.studentId}). Other students cannot view this video.</span>
+              </div>
+            ` : ''}
+            ${isRejected ? `
+              <div class="rejected-clinical-notice">
+                <span>📋 Clinician Note: ${alert.rejectReason || 'In-person tactile guidance advised. Demonstration video kept locked.'}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Right: Video Demonstration Candidate & Actions -->
+          <div class="demo-video-action-box">
+            <div class="demo-video-preview-header">
+              <span>🎬 Demonstration Video:</span>
+              <span class="demo-video-filename">${alert.recommendedVideoTitle || 'vowel_1.mp4'}</span>
+            </div>
+
+            <!-- Video Player Preview -->
+            <div class="demo-video-player-wrapper">
+              <video class="demo-card-video" controls playsinline preload="metadata" src="${alert.videoUrl || 'assets/videos/vowel_1.mp4'}"></video>
+            </div>
+
+            <div class="demo-action-buttons-row">
+              ${isPending ? `
+                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id})">
+                  ✅ Approve & Push Video
+                </button>
+                <button class="btn-demo-action btn-reject" onclick="window.therapistController.rejectStudentDemonstration(${alert.id})">
+                  ❌ Reject Push
+                </button>
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')" title="Preview in Live Studio">
+                  🔬 Studio
+                </button>
+              ` : isApproved ? `
+                <button class="btn-demo-action btn-revoke" onclick="window.therapistController.rejectStudentDemonstration(${alert.id}, 'Approval revoked by clinician.')">
+                  ↩️ Revoke Video Push
+                </button>
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')">
+                  🔬 Studio
+                </button>
+              ` : `
+                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id})">
+                  ✅ Re-evaluate & Approve Push
+                </button>
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')">
+                  🔬 Studio
+                </button>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  /**
+   * One-Click Video Demonstration Push / Unlock Action (From schedule drawer or push list)
+   */
+  async approveStudentDemonstration(alertId, customVideoUrl = '') {
     if (window.apiClient && window.apiClient.isAuthenticated()) {
       try {
         await window.apiClient.unlockContent(alertId, { sendNotification: true });
-        console.log('✅ Struggle alert unlocked on backend:', alertId);
+        console.log('✅ Demonstration video unlocked on backend for alert:', alertId);
       } catch (err) {
         console.warn('[TherapistView] Backend unlock fallback to local:', err.message || err);
       }
     }
 
-    // Mark alert as resolved
-    window.appState.resolveAlert(alertId);
-
-    // Unlock video demonstration for student and parent
-    window.appState.unlockPhoneme3D(phonemeId);
-
-    // Re-render alerts
+    window.appState.approveDemonstrationPush(alertId, customVideoUrl);
+    this.renderDemonstrationPushList();
     this.renderStruggleAlerts();
+  }
 
-    // Update roster status
-    const studentItem = this.roster.find(r => r.targetPhoneme === phonemeId);
-    if (studentItem) {
-      studentItem.status = 'in-progress';
-      studentItem.statusLabel = 'Video Guided Active';
-      this.renderSchedule();
+  async rejectStudentDemonstration(alertId, reason = '') {
+    const finalReason = reason || prompt("Enter clinical reason for rejecting video demonstration push:", "Requires tactile prompt & live placement guidance in next session.") || "Clinical in-person coaching recommended.";
+
+    if (window.apiClient && window.apiClient.isAuthenticated()) {
+      try {
+        await window.apiClient.rejectAlert(alertId, { reason: finalReason });
+        console.log('✅ Demonstration push rejected on backend for alert:', alertId);
+      } catch (err) {
+        console.warn('[TherapistView] Backend reject fallback to local:', err.message || err);
+      }
     }
 
-    // Show toast
-    window.appState.showToast(
-      '🎬 Clinical Demonstration Unlocked!',
-      `Successfully unlocked clinical articulation video for ${studentItem ? studentItem.student : 'student'} and notified parent!`,
-      'unlock'
-    );
+    window.appState.rejectDemonstrationPush(alertId, finalReason);
+    this.renderDemonstrationPushList();
+    this.renderStruggleAlerts();
+  }
+
+  setDemoFilter(filter) {
+    this.demoFilter = filter;
+    document.querySelectorAll('.demo-filter-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    this.renderDemonstrationPushList();
+    window.soundSFX?.playPop();
+  }
+
+  handleDemoSearch(query) {
+    this.demoSearchQuery = query;
+    this.renderDemonstrationPushList();
+  }
+
+  resolveAndUnlock3D(alertId, phonemeId) {
+    this.approveStudentDemonstration(alertId);
   }
 
   startLiveSession(studentName, phonemeId) {

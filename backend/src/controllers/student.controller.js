@@ -6,6 +6,7 @@ const auditService = require('../services/audit.service');
 const asyncHandler = require('../utils/asyncHandler');
 const { success } = require('../utils/apiResponse');
 const { ApiError } = require('../utils/errors');
+const storage = require('../config/storage');
 
 function computeAge(dateOfBirth) {
   if (!dateOfBirth) return null;
@@ -121,4 +122,33 @@ const getStudent = asyncHandler(async (req, res) => {
   return success(res, toDto(req.student, { assignedPhonemes, parents }));
 });
 
-module.exports = { listStudents, getStudent };
+const getStudentDemonstrations = asyncHandler(async (req, res) => {
+  const studentId = Number(req.student.id);
+  const unlocks = await db('content_unlocks as cu')
+    .join('three_d_content as tdc', 'tdc.id', 'cu.content_id')
+    .join('phonemes as p', 'p.id', 'cu.phoneme_id')
+    .where('cu.student_id', studentId)
+    .andWhere('cu.status', 'active')
+    .select(
+      'cu.id as unlock_id',
+      'cu.phoneme_id',
+      'p.character as phoneme_character',
+      'p.name as phoneme_name',
+      'tdc.video_url',
+      'cu.unlocked_at',
+      'cu.therapist_id'
+    );
+
+  return success(res, {
+    demonstrations: unlocks.map((u) => ({
+      unlockId: u.unlock_id,
+      phonemeId: u.phoneme_id,
+      phonemeCharacter: u.phoneme_character,
+      phonemeName: u.phoneme_name,
+      videoUrl: u.video_url ? storage.generatePlaybackUrl(u.video_url) : null,
+      unlockedAt: u.unlocked_at,
+    })),
+  });
+});
+
+module.exports = { listStudents, getStudent, getStudentDemonstrations };

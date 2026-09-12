@@ -223,6 +223,17 @@ class EchoSeedApiClient {
     });
   }
 
+  async rejectAlert(alertId, payload = { reason: '' }) {
+    return this.request(`/alerts/${alertId}/reject`, {
+      method: 'POST',
+      body: payload,
+    });
+  }
+
+  async getStudentDemonstrations(studentId) {
+    return this.request(`/students/${studentId}/demonstrations`);
+  }
+
   /* =========================================================
      6. LIVE THERAPY SESSIONS & CLINICAL NOTES
      ========================================================= */

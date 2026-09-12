@@ -371,6 +371,15 @@
             <p>Master tongue, lip, and jaw placement to build glowing speech memory orbs!</p>
           </div>
           <div class="unit-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- Interactive Student Switcher for Per-Student Video Demonstration Isolation -->
+            <div class="student-switch-box" title="Switch active learner to verify per-student demonstration video visibility">
+              <span style="font-size: 11px; font-weight: 800; color: #475569;">👤 Learner:</span>
+              <select id="select-active-student" class="student-switch-select" onchange="window.appState.switchActiveStudent(this.value)">
+                <option value="ORB-4819">Aarav Sharma (ORB-4819)</option>
+                <option value="ORB-7320">Ananya Verma (ORB-7320)</option>
+                <option value="ORB-9201">Kabir Mehta (ORB-9201)</option>
+              </select>
+            </div>
             <div class="student-id-pill" id="student-header-id-pill" title="Share this ID with your parent or caregiver to link your account">
               <span>🆔 Speech ID:</span>
               <strong id="student-display-id">ORB-4819</strong>
@@ -701,6 +710,17 @@
               <span class="badge-3d-status" id="badge-video-status">🎬 Dedicated Video Slot</span>
             </div>
 
+            <!-- Clinical Demonstration Push Callout Banner (Exclusive to approved student) -->
+            <div class="student-demo-unlocked-callout" id="student-demo-unlocked-callout" style="display: none;">
+              <div class="callout-icon">🎬</div>
+              <div class="callout-body">
+                <div class="callout-title" id="demo-callout-title">Clinical Demonstration Pushed by SLP Dr. Ritu!</div>
+                <div class="callout-text" id="demo-callout-text">
+                  Dr. Ritu Nair reviewed your 5 practice attempts and pushed this targeted clinical demonstration video exclusively for you. Watch the tongue positioning below!
+                </div>
+              </div>
+            </div>
+
             <!-- 3D vs 2D Video Selector Tabs -->
             <div class="video-dimension-tabs">
               <button class="dimension-tab-btn active" id="btn-slot-3d">
@@ -806,7 +826,11 @@
       <div class="therapist-subnav">
         <div class="therapist-subnav-links">
           <button class="subnav-tab active" data-view="schedule">
-            <span>📅</span> Schedule & Struggle Alerts
+            <span>📅</span> Schedule & Live Roster
+          </button>
+          <button class="subnav-tab" data-view="demonstrations" id="tab-therapist-demo-push">
+            <span>🎬</span> Push Video to Demonstration
+            <span class="demo-badge-pill" id="therapist-demo-push-count">3</span>
           </button>
           <button class="subnav-tab" data-view="studio">
             <span>🔬</span> Live Articulation Studio
@@ -853,6 +877,82 @@
           </div>
         </section>
 
+      </div>
+
+      <!-- THERAPIST PAGE 2: PUSH VIDEO TO DEMONSTRATION & 5-FAILURE STRUGGLE REVIEW CENTER -->
+      <div id="therapist-demonstrations-subview" style="display: none;">
+        <!-- Center Header Card -->
+        <div class="demo-center-header-card">
+          <div class="demo-center-title-row">
+            <div class="demo-center-icon">🎬</div>
+            <div>
+              <h2 class="demo-center-title">Push Video to Demonstration Center</h2>
+              <p class="demo-center-subtitle">
+                Automated 5-Failure Rule: Review learners who failed 5 consecutive attempts during practice. 
+                Approve or reject clinical video demonstrations individually. <strong>Approved videos become visible exclusively to the respective student.</strong>
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Metrics Bar -->
+          <div class="demo-center-metrics-grid">
+            <div class="demo-metric-card alert">
+              <span class="metric-icon">🚨</span>
+              <div>
+                <div class="metric-val" id="metric-failed-count">3</div>
+                <div class="metric-label">5-Failure Struggles</div>
+              </div>
+            </div>
+            <div class="demo-metric-card pending">
+              <span class="metric-icon">⏳</span>
+              <div>
+                <div class="metric-val" id="metric-pending-count">3</div>
+                <div class="metric-label">Pending Decisions</div>
+              </div>
+            </div>
+            <div class="demo-metric-card approved">
+              <span class="metric-icon">✅</span>
+              <div>
+                <div class="metric-val" id="metric-approved-count">0</div>
+                <div class="metric-label">Approved & Pushed</div>
+              </div>
+            </div>
+            <div class="demo-metric-card rejected">
+              <span class="metric-icon">📋</span>
+              <div>
+                <div class="metric-val" id="metric-rejected-count">0</div>
+                <div class="metric-label">In-Session / Rejected</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="demo-filters-toolbar">
+          <div class="demo-filter-pills">
+            <button class="demo-filter-pill active" data-filter="all" onclick="window.therapistController.setDemoFilter('all')">
+              All Cases (<span id="filter-count-all">3</span>)
+            </button>
+            <button class="demo-filter-pill" data-filter="pending" onclick="window.therapistController.setDemoFilter('pending')">
+              ⚠️ Pending Review (<span id="filter-count-pending">3</span>)
+            </button>
+            <button class="demo-filter-pill" data-filter="approved" onclick="window.therapistController.setDemoFilter('approved')">
+              ✅ Approved & Pushed (<span id="filter-count-approved">0</span>)
+            </button>
+            <button class="demo-filter-pill" data-filter="rejected" onclick="window.therapistController.setDemoFilter('rejected')">
+              ❌ In-Session / Rejected (<span id="filter-count-rejected">0</span>)
+            </button>
+          </div>
+          <div class="demo-search-wrap">
+            <span class="search-icon-prefix">🔍</span>
+            <input type="text" id="demo-student-search-input" placeholder="Search student or sound..." oninput="window.therapistController.handleDemoSearch(this.value)">
+          </div>
+        </div>
+
+        <!-- Visible List of Students Who Failed 5 Times -->
+        <div class="demonstration-students-list" id="demonstration-students-list">
+          <!-- Dynamically populated by therapist-view.js -->
+        </div>
       </div>
 
       <!-- THERAPIST PAGE 2: LIVE ARTICULATION STUDIO -->

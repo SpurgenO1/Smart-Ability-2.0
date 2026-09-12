@@ -89,4 +89,54 @@ describe('alerts + content unlock', () => {
       .send({ contentId: content.id });
     expect(unlockRes.status).toBe(403);
   });
+
+  test('therapist can reject/dismiss a struggle alert with clinical reason', async () => {
+    const { therapist, phoneme } = await triggerFiveFailureAlert();
+
+    const alerts = await db('struggle_alerts').where({ phoneme_id: phoneme.id });
+    const alertId = alerts[0].id;
+
+    const rejectRes = await request(app)
+      .post(`/api/v1/alerts/${alertId}/reject`)
+      .set(authHeader(therapist.accessToken))
+      .send({ reason: 'Focus on in-person tactile placement cues first.' });
+
+    expect(rejectRes.status).toBe(200);
+    expect(rejectRes.body.data.status).toBe('dismissed');
+
+    const updatedAlert = await db('struggle_alerts').where({ id: alertId }).first();
+    expect(updatedAlert.status).toBe('dismissed');
+  });
+
+  test('unlocked demonstration video is visible strictly to the respective student and not to another student', async () => {
+    const { therapist, student, phoneme, content } = await triggerFiveFailureAlert();
+
+    // Create a second student who should NOT see the unlocked demonstration video
+    const otherStudent = await registerAndLogin('student');
+
+    const alerts = await db('struggle_alerts').where({ phoneme_id: phoneme.id });
+    const alertId = alerts[0].id;
+
+    // Therapist unlocks demonstration video for student 1
+    const unlockRes = await request(app)
+      .post(`/api/v1/alerts/${alertId}/unlock`)
+      .set(authHeader(therapist.accessToken))
+      .send({ contentId: content.id });
+    expect(unlockRes.status).toBe(201);
+
+    // Respective student checks their unlocked demonstrations: MUST have 1 unlock
+    const studentDemosRes = await request(app)
+      .get(`/api/v1/students/${student.roleEntity.id}/demonstrations`)
+      .set(authHeader(student.accessToken));
+    expect(studentDemosRes.status).toBe(200);
+    expect(studentDemosRes.body.data.demonstrations).toHaveLength(1);
+    expect(studentDemosRes.body.data.demonstrations[0].phonemeId).toBe(phoneme.id);
+
+    // Other student checks their unlocked demonstrations: MUST HAVE 0 unlocks
+    const otherDemosRes = await request(app)
+      .get(`/api/v1/students/${otherStudent.roleEntity.id}/demonstrations`)
+      .set(authHeader(otherStudent.accessToken));
+    expect(otherDemosRes.status).toBe(200);
+    expect(otherDemosRes.body.data.demonstrations).toHaveLength(0);
+  });
 });

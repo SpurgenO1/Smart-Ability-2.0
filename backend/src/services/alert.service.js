@@ -136,4 +136,35 @@ async function unlockContent({ alertId, therapistId, contentId, message, sendNot
   return unlock;
 }
 
-module.exports = { createAlertIfNeeded, unlockContent, getAlertForTherapistOrThrow };
+async function rejectAlert({ alertId, therapistId, reason, sendNotification = true }) {
+  const alert = await getAlertForTherapistOrThrow(alertId, therapistId);
+
+  await struggleAlertModel.updateStatus(alert.id, 'dismissed', {
+    resolved_at: new Date()
+  });
+
+  emitToRoom(roomFor('student', alert.student_id), 'DEMONSTRATION_REJECTED', {
+    studentId: alert.student_id,
+    phonemeId: alert.phoneme_id,
+    alertId: alert.id,
+    reason: reason || 'Clinician reviewed and recommended live 1-on-1 articulation coaching.',
+  });
+
+  if (sendNotification) {
+    const student = await studentModel.findById(alert.student_id);
+    if (student) {
+      await notificationService.notify({
+        recipientId: student.user_id,
+        type: 'struggle_alert_rejected',
+        title: 'Articulation Practice Guidance',
+        message: reason || 'Your clinician reviewed your attempts and scheduled live clinical focus.',
+        referenceType: 'struggle_alert',
+        referenceId: alert.id,
+      });
+    }
+  }
+
+  return { ...alert, status: 'dismissed' };
+}
+
+module.exports = { createAlertIfNeeded, unlockContent, rejectAlert, getAlertForTherapistOrThrow };

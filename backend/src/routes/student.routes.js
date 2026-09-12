@@ -16,5 +16,10 @@ router.get(
   requireStudentAccess('studentId'),
   progressController.getPracticeFrequency
 );
+router.get(
+  '/:studentId/demonstrations',
+  requireStudentAccess('studentId'),
+  studentController.getStudentDemonstrations
+);
 
 module.exports = router;

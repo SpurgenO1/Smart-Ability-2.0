@@ -56,4 +56,23 @@ const unlockAlert = asyncHandler(async (req, res) => {
   );
 });
 
-module.exports = { listAlerts, getAlert, unlockAlert };
+const rejectAlert = asyncHandler(async (req, res) => {
+  const { reason, sendNotification } = req.body || {};
+
+  const alert = await alertService.rejectAlert({
+    alertId: Number(req.params.alertId),
+    therapistId: req.roleEntity.id,
+    reason,
+    sendNotification,
+  });
+
+  await auditService.record(req.user.id, auditService.ACTIONS.ALERT_DISMISS || 'ALERT_DISMISS', alert.id);
+
+  return success(
+    res,
+    { alertId: alert.id, status: 'dismissed', rejectedBy: req.roleEntity.id, reason },
+    200
+  );
+});
+
+module.exports = { listAlerts, getAlert, unlockAlert, rejectAlert };

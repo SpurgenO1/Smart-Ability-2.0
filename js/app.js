@@ -23,21 +23,67 @@ class AppStateManager {
     this.activeVideoDimension = '3d'; // '3d' or '2d'
     this.customVideoUrl = '';
 
-    // Clinical Struggle Alerts
+    // Clinical Struggle Alerts (5-Failure Rule)
     this.struggleAlerts = [
       {
         id: 101,
+        studentId: "ORB-4819",
         studentName: "Aarav Sharma",
+        age: "6 yrs",
         phonemeId: "ka",
         phonemeSymbol: "क",
-        phonemeName: "Ka (क)",
-        timestamp: "10:14 AM",
+        phonemeName: "Ka (क - Velar Stop)",
+        timestamp: "Today, 10:14 AM",
         consecutiveFailures: 5,
-        resolved: false
+        status: "pending", // 'pending' | 'approved' | 'rejected'
+        resolved: false,
+        deficitReason: "Velar Fronting: Substituting dental /t/ for velar /k/ with anterior tongue tip elevation.",
+        recommendedVideoTitle: "Dragon Breath Velar Occlusion (vowel_1.mp4)",
+        videoUrl: "assets/videos/vowel_1.mp4"
+      },
+      {
+        id: 102,
+        studentId: "ORB-9201",
+        studentName: "Kabir Mehta",
+        age: "6 yrs",
+        phonemeId: "ta_retro",
+        phonemeSymbol: "ट",
+        phonemeName: "Ṭa (ट - Retroflex Stop)",
+        timestamp: "Today, 09:45 AM",
+        consecutiveFailures: 5,
+        status: "pending",
+        resolved: false,
+        deficitReason: "Flat Tongue Posture: Incomplete retroflex curling contacting alveolar ridge instead of hard palate.",
+        recommendedVideoTitle: "Retroflex Curling Sagittal Demonstration (vowel_1.mp4)",
+        videoUrl: "assets/videos/vowel_1.mp4"
+      },
+      {
+        id: 103,
+        studentId: "ORB-7320",
+        studentName: "Ananya Verma",
+        age: "7 yrs",
+        phonemeId: "swar_aa",
+        phonemeSymbol: "आ",
+        phonemeName: "Aa (आ - Open Central Vowel)",
+        timestamp: "Yesterday, 04:20 PM",
+        consecutiveFailures: 5,
+        status: "pending",
+        resolved: false,
+        deficitReason: "Restricted Jaw Aperture: Insufficient vertical mandibular lowering for open vowel space.",
+        recommendedVideoTitle: "Wide Jaw Aperture Articulation Guide (vowel_1.mp4)",
+        videoUrl: "assets/videos/vowel_1.mp4"
       }
     ];
 
-    // Unlocked 3D/2D Guided Modules
+    // Per-Student Unlocked Clinical Demonstration Videos
+    // Mapping: { [studentId]: { [phonemeId]: { status: 'approved'|'rejected', videoUrl, approvedAt, approvedBy, notes } } }
+    this.studentDemonstrations = {
+      'ORB-4819': {},
+      'ORB-7320': {},
+      'ORB-9201': {}
+    };
+
+    // Unlocked 3D/2D Guided Modules (legacy support)
     this.unlockedPhonemes = new Set(['ta_retro']);
     this.completedPhonemes = new Set(['swar_a']); // 'अ' mastered with gold star ⭐, 'swar_aa' ('आ') is active glowing!
     this.activeTargetPhonemeId = 'swar_aa';
@@ -148,6 +194,43 @@ class AppStateManager {
             therapist: "Dr. Ritu Nair (Speech Language Pathologist)",
             target: "Target: 'इ' and 'ई' (Front Close Vowels)",
             content: "Ananya demonstrated outstanding wide-smile vocalic imitation on both short and long /i/ vowels. Ready to advance into dental stops."
+          }
+        ]
+      },
+      'ORB-9201': {
+        id: 'ORB-9201',
+        name: 'Kabir Mehta',
+        age: '6',
+        program: 'Pediatric Articulation Retraining',
+        masteredCount: '8 / 18',
+        masteredSubtext: '↑ 2 sounds mastered this week',
+        streak: 8,
+        streakSubtext: 'Consistent home speech practice',
+        clinician: 'Dr. Ritu Nair (SLP)',
+        clinicianSubtext: 'SLP • Clinical Supervisor',
+        progressGroups: [
+          { name: "Swar (Vowels / स्वर - अ to अः: 13 Sounds)", mastered: "9 / 13", percent: 69, color: "blue" },
+          { name: "Sparsh (Stops / स्पर्श - क to म: 25 Letters)", mastered: "11 / 25", percent: 44, color: "green" },
+          { name: "Anthastha (Approximants / अन्तःस्थ - य, र, ल, व)", mastered: "2 / 4", percent: 50, color: "blue" },
+          { name: "Ushma & Glottal (ऊष्म व कण्ठ्य - श, ष, स, ह)", mastered: "1 / 4", percent: 25, color: "coral" },
+          { name: "Samyukt Blends (संयुक्ताक्षर - क्ष, त्र, ज्ञ, श्र)", mastered: "1 / 4", percent: 25, color: "green" }
+        ],
+        appointments: [
+          {
+            title: "Articulation Placement Coaching",
+            clinician: "Dr. Ritu Nair (SLP)",
+            time: "Thursday at 02:30 PM",
+            status: "Upcoming",
+            isToday: false,
+            notes: "Retroflex curling placement guidance"
+          }
+        ],
+        notes: [
+          {
+            date: "Yesterday",
+            therapist: "Dr. Ritu Nair (Speech Language Pathologist)",
+            target: "Target: 'ट' (Ṭa - Retroflex)",
+            content: "Kabir is working on tongue tip curling. Recommending visual demonstration if 5-attempt fatigue occurs."
           }
         ]
       }
@@ -592,10 +675,14 @@ class AppStateManager {
   }
 
   addStruggleAlert(alertData) {
+    if (!alertData.status) alertData.status = 'pending';
     this.struggleAlerts.unshift(alertData);
     this.updateNotificationBadges();
     if (window.therapistController) {
       window.therapistController.renderStruggleAlerts();
+      if (typeof window.therapistController.renderDemonstrationPushList === 'function') {
+        window.therapistController.renderDemonstrationPushList();
+      }
     }
   }
 
@@ -603,19 +690,173 @@ class AppStateManager {
     const alert = this.struggleAlerts.find(a => a.id === alertId);
     if (alert) {
       alert.resolved = true;
+      alert.status = 'approved';
     }
     this.updateNotificationBadges();
   }
 
+  /**
+   * Approves pushing demonstration video to ONE SPECIFIC STUDENT
+   * The video demonstration becomes viewable ONLY by that student, not to every student.
+   */
+  approveDemonstrationPush(alertId, customVideoUrl = '') {
+    const alert = this.struggleAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+
+    alert.status = 'approved';
+    alert.resolved = true;
+    alert.resolvedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const studentId = alert.studentId || this.activeStudentId;
+    if (!this.studentDemonstrations[studentId]) {
+      this.studentDemonstrations[studentId] = {};
+    }
+
+    const videoUrl = customVideoUrl || alert.videoUrl || 'assets/videos/vowel_1.mp4';
+    this.studentDemonstrations[studentId][alert.phonemeId] = {
+      status: 'approved',
+      videoUrl: videoUrl,
+      approvedAt: alert.resolvedAt,
+      approvedBy: 'Dr. Ritu Nair (SLP)',
+      notes: `Targeted clinical articulation demonstration pushed to address 5-attempt struggle on '${alert.phonemeSymbol}'.`
+    };
+
+    // If the currently active viewed student is this student, unlock their active session
+    if (this.activeStudentId === studentId) {
+      this.unlockedPhonemes.add(alert.phonemeId);
+    }
+
+    this.updateNotificationBadges();
+
+    // Re-render UI components
+    if (window.therapistController) {
+      window.therapistController.renderStruggleAlerts();
+      if (typeof window.therapistController.renderDemonstrationPushList === 'function') {
+        window.therapistController.renderDemonstrationPushList();
+      }
+    }
+    if (window.studentController) {
+      window.studentController.updatePracticeStageUI();
+      window.studentController.updateVideoSlotDisplay();
+      window.studentController.renderPathMap();
+      window.studentController.renderTileMatrix();
+    }
+    if (window.parentController) {
+      window.parentController.renderAlertBanner();
+    }
+
+    window.soundSFX?.playUnlockCheer();
+    this.showToast(
+      '🎬 Demonstration Video Approved!',
+      `Clinical demonstration for '${alert.phonemeSymbol}' approved & pushed to ${alert.studentName}. Accessible only to this student!`,
+      'unlock'
+    );
+  }
+
+  /**
+   * Rejects pushing demonstration video for a student
+   * Leaves demonstration video locked; clinician recommends live coaching instead.
+   */
+  rejectDemonstrationPush(alertId, reason = '') {
+    const alert = this.struggleAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+
+    alert.status = 'rejected';
+    alert.resolved = true;
+    alert.rejectedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    alert.rejectReason = reason || 'Recommended in-person tactile placement cues during upcoming live session.';
+
+    const studentId = alert.studentId || this.activeStudentId;
+    if (!this.studentDemonstrations[studentId]) {
+      this.studentDemonstrations[studentId] = {};
+    }
+
+    this.studentDemonstrations[studentId][alert.phonemeId] = {
+      status: 'rejected',
+      rejectedAt: alert.rejectedAt,
+      rejectedBy: 'Dr. Ritu Nair (SLP)',
+      reason: alert.rejectReason
+    };
+
+    this.updateNotificationBadges();
+
+    if (window.therapistController) {
+      window.therapistController.renderStruggleAlerts();
+      if (typeof window.therapistController.renderDemonstrationPushList === 'function') {
+        window.therapistController.renderDemonstrationPushList();
+      }
+    }
+    if (window.studentController) {
+      window.studentController.updatePracticeStageUI();
+      window.studentController.updateVideoSlotDisplay();
+    }
+
+    window.soundSFX?.playGentleTryAgain();
+    this.showToast(
+      '❌ Video Push Rejected',
+      `Demonstration video push rejected for ${alert.studentName}. Clinical guidance set to 1-on-1 session.`,
+      'standard'
+    );
+  }
+
+  /**
+   * Checks whether a demonstration video is approved specifically for this student
+   */
+  isDemonstrationApprovedForStudent(studentId, phonemeId) {
+    if (!studentId || !phonemeId) return false;
+    const studentUnlocks = this.studentDemonstrations[studentId];
+    if (!studentUnlocks) return false;
+    return studentUnlocks[phonemeId]?.status === 'approved';
+  }
+
+  getStudentDemonstrationStatus(studentId, phonemeId) {
+    if (!studentId || !phonemeId) return { status: 'locked' };
+    const studentUnlocks = this.studentDemonstrations[studentId];
+    if (studentUnlocks && studentUnlocks[phonemeId]) {
+      return studentUnlocks[phonemeId];
+    }
+    return { status: 'locked' };
+  }
+
+  /**
+   * Switches the active student being tested/viewed
+   */
+  switchActiveStudent(studentId) {
+    if (this.studentsDirectory[studentId]) {
+      this.activeStudentId = studentId;
+      this.updateStudentIdDisplay(studentId);
+
+      const studentName = this.studentsDirectory[studentId].name;
+      if (window.studentController) {
+        window.studentController.updatePracticeStageUI();
+        window.studentController.updateVideoSlotDisplay();
+        window.studentController.renderPathMap();
+        window.studentController.renderTileMatrix();
+      }
+
+      this.showToast(
+        '🔄 Switched Active Learner',
+        `Now testing as ${studentName} (ID: ${studentId})`,
+        'standard'
+      );
+    }
+  }
+
   unlockPhoneme3D(phonemeId) {
+    // When called directly without student context, unlock for active student
+    if (!this.studentDemonstrations[this.activeStudentId]) {
+      this.studentDemonstrations[this.activeStudentId] = {};
+    }
+    this.studentDemonstrations[this.activeStudentId][phonemeId] = {
+      status: 'approved',
+      videoUrl: 'assets/videos/vowel_1.mp4',
+      approvedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      approvedBy: 'Dr. Ritu Nair (SLP)'
+    };
     this.unlockedPhonemes.add(phonemeId);
 
     if (window.studentController) {
-      const badge = document.getElementById('badge-video-status');
-      if (badge) {
-        badge.className = 'badge-3d-status unlocked';
-        badge.textContent = '🔓 3D/2D Guided Module Unlocked by Therapist Dr. Ritu';
-      }
+      window.studentController.updateVideoSlotDisplay();
       window.studentController.renderPathMap();
       window.studentController.renderTileMatrix();
     }
@@ -651,15 +892,21 @@ class AppStateManager {
   }
 
   updateNotificationBadges() {
-    const unresolvedCount = this.struggleAlerts.filter(a => !a.resolved).length;
+    const pendingCount = this.struggleAlerts.filter(a => a.status === 'pending' || (!a.resolved && a.status !== 'rejected')).length;
     const badgeEl = document.getElementById('therapist-alert-badge');
     if (badgeEl) {
-      if (unresolvedCount > 0) {
+      if (pendingCount > 0) {
         badgeEl.style.display = 'inline-block';
-        badgeEl.textContent = unresolvedCount;
+        badgeEl.textContent = `${pendingCount} Struggle Alert${pendingCount > 1 ? 's' : ''}`;
       } else {
         badgeEl.style.display = 'none';
       }
+    }
+
+    const demoCountEl = document.getElementById('therapist-demo-push-count');
+    if (demoCountEl) {
+      demoCountEl.textContent = pendingCount;
+      demoCountEl.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
     }
   }
 

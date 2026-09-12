@@ -516,24 +516,79 @@ class StudentViewController {
     const promptEl = document.getElementById('slot-main-prompt');
     const subPromptEl = document.getElementById('slot-sub-prompt');
     const iconEl = document.getElementById('slot-film-icon');
+    const video = document.getElementById('embedded-custom-video');
+    const poster = document.getElementById('video-poster-stage');
+    const badge = document.getElementById('badge-video-status');
+    const callout = document.getElementById('student-demo-unlocked-callout');
+    const calloutTitle = document.getElementById('demo-callout-title');
+    const calloutText = document.getElementById('demo-callout-text');
 
-    const isUnlocked = this.currentPhoneme.unlocked3D || window.appState.unlockedPhonemes.has(this.currentPhoneme.id);
+    const currentStudentId = window.appState ? window.appState.activeStudentId : 'ORB-4819';
+    const studentInfo = (window.appState && window.appState.studentsDirectory[currentStudentId]) || { name: 'Student' };
+    const studentName = studentInfo.name;
 
-    if (this.activeVideoDimension === '3d') {
-      if (titleEl) titleEl.textContent = '3D Vocal Tract Video';
-      if (iconEl) iconEl.textContent = '🎬';
-      if (promptEl) promptEl.textContent = `3D Articulation Demonstration for '${this.currentPhoneme.symbol}'`;
-      if (subPromptEl) {
-        subPromptEl.textContent = isUnlocked ? 
-          "🔓 Therapist Dr. Ritu pushed this 3D articulatory clip! Watch tongue elevation & airflow exhalation." :
-          "Drop your custom 3D MP4/WebM video asset here or click 'Upload Custom Video' below.";
+    const demoStatus = window.appState ? window.appState.getStudentDemonstrationStatus(currentStudentId, this.currentPhoneme.id) : { status: 'locked' };
+    const isApproved = demoStatus.status === 'approved';
+    const isRejected = demoStatus.status === 'rejected';
+
+    if (isApproved) {
+      // APPROVED & PUSHED EXCLUSIVELY TO THIS STUDENT
+      if (badge) {
+        badge.className = 'badge-3d-status unlocked';
+        badge.textContent = `🔓 Clinical Video Approved for ${studentName}`;
       }
+      if (callout) {
+        callout.style.display = 'flex';
+        if (calloutTitle) calloutTitle.textContent = `🎬 Clinical Demonstration Pushed for ${studentName}!`;
+        if (calloutText) calloutText.textContent = `Dr. Ritu Nair reviewed your 5 practice attempts on '${this.currentPhoneme.symbol}' and pushed this video demonstration exclusively for you. Watch the tongue articulation below!`;
+      }
+      if (video) {
+        video.src = demoStatus.videoUrl || 'assets/videos/vowel_1.mp4';
+        video.style.display = 'block';
+      }
+      if (poster) poster.style.display = 'none';
+
+      if (titleEl) titleEl.textContent = 'Clinical Demonstration Video';
+      if (iconEl) iconEl.textContent = '🎬';
+      if (promptEl) promptEl.textContent = `Clinical Demonstration for '${this.currentPhoneme.symbol}'`;
+      if (subPromptEl) subPromptEl.textContent = `Unlocked exclusively for ${studentName}. Follow the visual model to correct tongue placement!`;
+
+    } else if (isRejected) {
+      // REJECTED FOR THIS STUDENT - FOCUS ON IN-PERSON COACHING
+      if (badge) {
+        badge.className = 'badge-3d-status rejected';
+        badge.textContent = `📋 In-Session Clinical Coaching Focus`;
+      }
+      if (callout) callout.style.display = 'none';
+      if (video) {
+        video.style.display = 'none';
+        video.pause();
+      }
+      if (poster) poster.style.display = 'flex';
+
+      if (titleEl) titleEl.textContent = 'In-Session Articulation Focus';
+      if (iconEl) iconEl.textContent = '📋';
+      if (promptEl) promptEl.textContent = `Live Session Guidance: '${this.currentPhoneme.symbol}'`;
+      if (subPromptEl) subPromptEl.textContent = `Dr. Ritu reviewed your attempts and recommended live tactile placement coaching in your next 1-on-1 session: "${demoStatus.reason || 'Practice with therapist'}"`;
+
     } else {
-      if (titleEl) titleEl.textContent = '2D Sagittal Video';
-      if (iconEl) iconEl.textContent = '🎞️';
-      if (promptEl) promptEl.textContent = `2D Cross-Section Articulation for '${this.currentPhoneme.symbol}'`;
+      // LOCKED FOR THIS STUDENT (Not approved, or another student's video)
+      if (badge) {
+        badge.className = 'badge-3d-status locked';
+        badge.textContent = `🔒 Clinical Demonstration Video Locked`;
+      }
+      if (callout) callout.style.display = 'none';
+      if (video) {
+        video.style.display = 'none';
+        video.pause();
+      }
+      if (poster) poster.style.display = 'flex';
+
+      if (titleEl) titleEl.textContent = this.activeVideoDimension === '3d' ? '3D Vocal Tract Video' : '2D Sagittal Video';
+      if (iconEl) iconEl.textContent = '🔒';
+      if (promptEl) promptEl.textContent = `Clinical Video Locked for ${studentName}`;
       if (subPromptEl) {
-        subPromptEl.textContent = "Drop your 2D sagittal cutaway animation video here to demonstrate velopharyngeal port & tongue closure.";
+        subPromptEl.textContent = `This clinical video demonstration is individually approved by SLP Dr. Ritu Nair when targeted assistance is needed (5-failure struggle rule).`;
       }
     }
   }
@@ -563,6 +618,11 @@ class StudentViewController {
     // Ensure any legacy SVG is removed
     const oldSvg = pathColumn.querySelector('.duo-path-spline');
     if (oldSvg) oldSvg.remove();
+
+    const studentSwitcher = document.getElementById('select-active-student');
+    if (studentSwitcher && window.appState) {
+      studentSwitcher.value = window.appState.activeStudentId || 'ORB-4819';
+    }
 
     const phonemes = this.getFilteredPhonemes();
     pathColumn.innerHTML = '';
@@ -946,18 +1006,8 @@ class StudentViewController {
       }
     }
 
-    // Clinical Demonstration Video status
-    const isUnlocked = p.unlocked3D || (window.appState && window.appState.unlockedPhonemes.has(p.id));
-    const badge = document.getElementById('badge-video-status');
-    if (badge) {
-      if (isUnlocked) {
-        badge.className = 'badge-3d-status unlocked';
-        badge.textContent = '🔓 Clinical Demonstration Video Unlocked!';
-      } else {
-        badge.className = 'badge-3d-status';
-        badge.textContent = '🎬 Dedicated Video Slot Ready';
-      }
-    }
+    // Clinical Demonstration Video status is refreshed by updateVideoSlotDisplay
+    this.updateVideoSlotDisplay();
 
     const struggleBox = document.getElementById('struggle-alert-box');
     if (struggleBox) struggleBox.classList.remove('active');
@@ -1223,7 +1273,11 @@ class StudentViewController {
     const alertBox = document.getElementById('struggle-alert-box');
     if (alertBox) alertBox.classList.add('active');
 
-    this.updatePetDialogue("Don't worry! Dr. Ritu was notified to unlock a helpful clinical video guide for us!");
+    this.updatePetDialogue("Don't worry! Dr. Ritu was alerted to review our attempts and push a helpful clinical video!");
+
+    const currentStudentId = window.appState?.activeStudentId || 'ORB-4819';
+    const studentInfo = (window.appState?.studentsDirectory[currentStudentId]) || {};
+    const currentStudentName = studentInfo.name || "Aarav Sharma";
 
     // Also notify socket server if connected
     if (window.socketClient) {
@@ -1236,20 +1290,26 @@ class StudentViewController {
 
     const struggleAlertData = {
       id: Date.now(),
-      studentName: window.appState?.studentName || "Aarav Sharma",
+      studentId: currentStudentId,
+      studentName: currentStudentName,
+      age: studentInfo.age ? `${studentInfo.age} yrs` : '6 yrs',
       phonemeId: this.currentPhoneme.id,
       phonemeSymbol: this.currentPhoneme.symbol,
       phonemeName: this.currentPhoneme.name,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       consecutiveFailures: 5,
+      status: 'pending',
       resolved: false,
+      deficitReason: `Detected repeated struggle (5 continuous attempts) on '${this.currentPhoneme.symbol}'. Articulatory guidance requested.`,
+      recommendedVideoTitle: `${this.currentPhoneme.name} Demonstration (vowel_1.mp4)`,
+      videoUrl: 'assets/videos/vowel_1.mp4'
     };
 
     window.appState.addStruggleAlert(struggleAlertData);
 
     window.appState.showToast(
       '🚨 5-Failure Struggle Triggered',
-      `Therapist alerted: Aarav Sharma struggled with '${this.currentPhoneme.symbol}'. Demonstration Video requested!`,
+      `Therapist alerted: ${currentStudentName} struggled with '${this.currentPhoneme.symbol}'. Added to Clinician Review List!`,
       'alert'
     );
 
