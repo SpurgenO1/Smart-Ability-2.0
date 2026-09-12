@@ -1,0 +1,510 @@
+openapi: 3.0.3
+info:
+  title: EchoSeed API
+  description: >
+    Pediatric Hindi speech-articulation therapy platform API.
+    Three roles: therapist, student, parent. All responses use the envelope
+    { success, data } on 2xx and { success: false, error: { code, message } }
+    otherwise.
+  version: "1.0.0"
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { type: object }
+    ErrorEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - AUTH_INVALID_CREDENTIALS
+                - AUTH_TOKEN_EXPIRED
+                - AUTH_UNAUTHORIZED
+                - FORBIDDEN_RESOURCE
+                - STUDENT_NOT_FOUND
+                - PHONEME_NOT_FOUND
+                - SESSION_NOT_FOUND
+                - ATTEMPT_INVALID
+                - ALERT_NOT_FOUND
+                - UNLOCK_NOT_FOUND
+                - INVALID_ROLE
+                - INVALID_REQUEST
+                - FILE_UPLOAD_FAILED
+                - INTERNAL_SERVER_ERROR
+            message: { type: string }
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user (therapist, student, or parent)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                role: { type: string, enum: [therapist, student, parent] }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessEnvelope' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /auth/login:
+    post:
+      summary: Log in and receive access/refresh tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessEnvelope' }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+
+  /auth/refresh:
+    post:
+      summary: Rotate an access/refresh token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: OK
+        '401': { $ref: '#/components/responses/Error' }
+
+  /students:
+    get:
+      summary: >
+        List assigned students (therapist only). Each entry includes a
+        computed `age` and `activePhonemes` (phonemes currently in_progress
+        for that student).
+      parameters:
+        - in: query
+          name: phoneme
+          schema: { type: integer }
+        - in: query
+          name: status
+          schema: { type: string, enum: [active, inactive, archived] }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: therapistId
+          description: Must equal the caller's own therapist id if provided - this is not an admin-wide lookup.
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /students/{studentId}:
+    get:
+      summary: >
+        Get a student's detailed profile (own data, assigned therapist, or
+        linked parent): includes computed `age`, `assignedPhonemes` (every
+        phoneme with a progress record, each with its masteryStatus), and
+        `parents` (linked parent name/email/relationship).
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /students/{studentId}/progress:
+    get:
+      summary: Get per-phoneme mastery progress for a student
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+
+  /students/{studentId}/practice-frequency:
+    get:
+      summary: >
+        Get daily practice session/attempt counts for a student, for
+        heatmap-calendar rendering.
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: range
+          description: Shorthand for `from = today - N days`, e.g. "30d". Ignored if `from` is also given.
+          schema: { type: string, example: 30d }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: OK }
+
+  /phonemes:
+    get:
+      summary: >
+        List active phonemes. `category` is the traditional grammar
+        classification (sparsh = stop consonants, antahstha = semivowels,
+        ushma = sibilants/fricatives).
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string, enum: [sparsh, antahstha, ushma], example: sparsh }
+      responses:
+        '200': { description: OK }
+
+  /phonemes/{phonemeId}:
+    get:
+      summary: Get a single phoneme, including its imageUrl (e.g. the kabutar illustration for क) and signed audio URLs.
+      parameters:
+        - in: path
+          name: phonemeId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /phonemes/{phonemeId}/articulation-content:
+    get:
+      summary: Get articulatory features and 3D/video content for a phoneme
+      parameters:
+        - in: path
+          name: phonemeId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /practice/sessions:
+    post:
+      summary: Start a practice session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, phonemeId]
+              properties:
+                studentId: { type: integer }
+                phonemeId: { type: integer }
+                mode: { type: string, enum: [self_practice, guided, assessment] }
+      responses:
+        '201': { description: Created }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /practice/sessions/{sessionId}/attempts:
+    post:
+      summary: >
+        Submit a practice attempt. The server evaluates PASS/FAIL from
+        recognizedText/recognitionConfidence/audioFeatures/mouthFeatures and
+        recomputes the consecutive-failure streak from stored history.
+        `isSuccess` and `failureCount` are accepted for client convenience
+        but are ALWAYS ignored/stripped - they can never override the
+        server-side result or counter. `audioUrl` is stored for reference
+        only (e.g. a fileId from the /audio upload flow). On the 5th
+        consecutive failure a struggle_alerts row is created (once per
+        streak) and THERAPIST_ALERT_CREATED/STUDENT_FAILURE_THRESHOLD are
+        emitted over WebSocket.
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attemptNumber, recognizedText, recognitionConfidence]
+              properties:
+                attemptNumber: { type: integer, minimum: 1 }
+                targetPhoneme: { type: string }
+                recognizedText: { type: string }
+                recognitionConfidence: { type: number, minimum: 0, maximum: 1 }
+                audioFeatures: { type: object }
+                mouthFeatures: { type: object }
+                audioUrl: { type: string, description: Informational only; not used in evaluation. }
+                isSuccess: { type: boolean, description: Accepted but ignored - never trusted. }
+                failureCount: { type: integer, description: Accepted but ignored - never trusted. }
+      responses:
+        '201': { description: Created }
+        '404': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /alerts:
+    get:
+      summary: List struggle alerts for the authenticated therapist
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, reviewed, unlocked, resolved, dismissed] }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /alerts/{alertId}:
+    get:
+      summary: Get a single struggle alert, including studentName and the phoneme character.
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /alerts/{alertId}/unlock:
+    post:
+      summary: >
+        Unlock 3D articulation content for the student behind an alert.
+        `contentId` is optional - when omitted, the single 3D content
+        bundle tied to the alert's phoneme is unlocked automatically.
+        `sendNotification` (default true) controls whether a notification
+        record is created for the student.
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contentId: { type: integer }
+                message: { type: string }
+                sendNotification: { type: boolean, default: true }
+      responses:
+        '201': { description: Created }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /sessions:
+    post:
+      summary: Create a live therapist-led session slot (therapist only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId]
+              properties:
+                studentId: { type: integer }
+                type: { type: string, enum: [live, assessment, follow_up] }
+                scheduledTime: { type: string, format: date-time }
+      responses:
+        '201': { description: Created }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /sessions/{sessionId}/start:
+    post:
+      summary: >
+        Start a live session. Emits SESSION_STARTED { sessionId,
+        therapistName, streamUrl } to the student.
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /sessions/{sessionId}/push-content:
+    post:
+      summary: >
+        Push content to the student in real time during a live session.
+        `type` is accepted as an alias of `contentType`. `phonemeId` is
+        optional - resolved from the content's own phoneme when omitted.
+        Emits CONTENT_PUSHED { sessionId, contentUrl, contentType,
+        contentId, phonemeId } to the student.
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentId]
+              properties:
+                contentType: { type: string, example: 3D_AIRFLOW }
+                type: { type: string, description: Alias of contentType. }
+                contentId: { type: integer }
+                phonemeId: { type: integer }
+      responses:
+        '200': { description: OK }
+
+  /sessions/{sessionId}/notes:
+    post:
+      summary: >
+        Add a session note/recommendation with an optional clinical score
+        and target phoneme. `notes` is accepted as an alias of `note`.
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+                notes: { type: string, description: Alias of note. }
+                recommendation: { type: string }
+                score: { type: number }
+                targetPhoneme: { type: string, description: The phoneme character, e.g. क. }
+      responses:
+        '201': { description: Created }
+
+  /parents/me/children:
+    get:
+      summary: List the authenticated parent's linked children
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /diagnostics/{studentId}:
+    get:
+      summary: Get suspected articulatory features for a student
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /audio/upload-url:
+    post:
+      summary: >
+        Request a short-lived signed URL to upload a recording. `fileType`
+        is accepted as an alias of `format`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format: { type: string }
+                fileType: { type: string, description: Alias of format. }
+                fileName: { type: string }
+                durationMs: { type: integer }
+                sampleRate: { type: integer }
+                channels: { type: integer }
+      responses:
+        '201': { description: Created }
+
+  /audio/complete:
+    post:
+      summary: >
+        Confirm an upload finished and attach it to a session/attempt.
+        `audioId` is accepted as an alias of `fileId`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileId: { type: string }
+                audioId: { type: string, description: Alias of fileId. }
+                uploadPath: { type: string }
+                sessionId: { type: integer }
+                attemptId: { type: integer }
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/responses/Error' }
+
+x-websocket:
+  connection: "wss://.../ws (Socket.IO, path /ws) - auth token passed as socket.handshake.auth.token; clients auto-join their role room (therapist:<id>, student:<id>, parent:<id>)."
+  events:
+    STUDENT_FAILURE_THRESHOLD:
+      direction: server -> student
+      payload: { alertId: integer, studentId: integer, phoneme: string, failureCount: integer }
+    THERAPIST_ALERT_CREATED:
+      direction: server -> therapist
+      payload: { alertId: integer, studentId: integer, studentName: string, phoneme: string }
+    THREE_D_UNLOCKED:
+      direction: server -> student
+      payload: { studentId: integer, phonemeId: integer, videoUrl: string, unlockId: integer, contentId: integer }
+    SESSION_STARTED:
+      direction: server -> student
+      payload: { sessionId: integer, therapistName: string, streamUrl: string }
+    CONTENT_PUSHED:
+      direction: server -> student
+      payload: { sessionId: integer, contentUrl: string, contentType: string, contentId: integer, phonemeId: integer }
+    PROGRESS_UPDATED:
+      direction: server -> therapist, parent, student
+      payload: { studentId: integer, phonemeId: integer, newStatus: "NOT_STARTED | IN_PROGRESS | MASTERED" }

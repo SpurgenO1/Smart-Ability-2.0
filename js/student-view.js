@@ -690,7 +690,7 @@ class StudentViewController {
     }
   }
 
-  openPracticeRoom(phoneme) {
+  async openPracticeRoom(phoneme) {
     this.currentPhoneme = phoneme;
     this.consecutiveFailures = 0;
     this.updateAttemptCounterUI();
@@ -701,159 +701,70 @@ class StudentViewController {
     this.updatePracticeStageUI();
     this.updateVideoSlotDisplay();
     this.updatePetDialogue(`Awesome! Let's practice '${phoneme.symbol}' (${phoneme.name})! Complete levels to earn memory gems!`);
+
+    await this.ensureBackendSession();
   }
 
-  showPathMap() {
-    document.getElementById('student-practice-subview').classList.remove('active');
-    document.getElementById('student-map-subview').classList.add('active');
-    this.renderPathMap();
-    this.renderTileMatrix();
-  }
-
-  completeAndReturnToTrail() {
-    window.appState.markPhonemeCompleted(this.currentPhoneme.id);
-    this.showPathMap();
-    if (window.soundSFX) window.soundSFX.playCorrect();
-    setTimeout(() => {
-      const activeBtn = document.querySelector('.duo-node-btn.active-target');
-      if (activeBtn) {
-        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  async ensureBackendSession() {
+    if (window.apiClient && window.apiClient.isAuthenticated()) {
+      try {
+        const studentId = window.appState?.activeStudentDbId || 1;
+        const phonemeId = this.currentPhoneme?.backendId || 1;
+        const session = await window.apiClient.startPracticeSession(studentId, phonemeId, 'self_practice');
+        this.activePracticeSessionId = session.id;
+        this.attemptCounter = 0;
+        console.log('✅ Active practice session started on server (ID: ' + session.id + ')');
+      } catch (e) {
+        console.warn('[StudentView] Session start fallback to local:', e.message || e);
       }
-    }, 150);
-  }
-
-  switchHierarchyLevel(level) {
-    this.currentLevel = level;
-    document.querySelectorAll('.hierarchy-tab-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.level === level);
-    });
-
-    this.updatePracticeStageUI();
-    this.hideFeedback();
-
-    if (level === 'sound') {
-      this.updatePetDialogue(`Level 1: Sound! Say isolated '${this.currentPhoneme.symbol}'. Earn +20 🔮 on success!`);
-    } else if (level === 'word') {
-      this.updatePetDialogue(`Level 2: Word! Say '${this.currentPhoneme.wordLevel.word}'. Earn +35 🔮 on success!`);
-    } else if (level === 'sentence') {
-      this.updatePetDialogue(`Level 3: Sentence! Speak the full sentence. Earn +50 🔮 on success!`);
     }
   }
 
-  updatePracticeStageUI() {
-    const p = this.currentPhoneme;
-
-    document.getElementById('current-practice-title').textContent = `${p.name} (${p.category})`;
-    document.getElementById('target-hero-letter').textContent = p.symbol;
-    document.getElementById('target-hero-emoji').textContent = p.wordLevel.emoji;
-    document.getElementById('target-hero-word').textContent = p.wordLevel.word;
-    document.getElementById('target-hero-translit').textContent = `(${p.wordLevel.transliteration} - "${p.wordLevel.meaning}")`;
-
-    const sentenceBox = document.getElementById('sentence-hero-box');
-    if (this.currentLevel === 'sentence') {
-      sentenceBox.classList.add('active');
-      document.getElementById('sentence-hero-text').textContent = p.sentenceLevel.sentence;
-      document.getElementById('sentence-hero-meaning').textContent = `${p.sentenceLevel.transliteration} — "${p.sentenceLevel.meaning}"`;
-    } else {
-      sentenceBox.classList.remove('active');
-    }
-
-    const syllableContainer = document.getElementById('syllable-cadence-pills');
-    syllableContainer.innerHTML = '';
-    p.wordLevel.syllables.forEach((syl, i) => {
-      const pill = document.createElement('div');
-      pill.className = 'syllable-pill';
-      pill.id = `syllable-pill-${i}`;
-      pill.textContent = syl;
-      syllableContainer.appendChild(pill);
-    });
-
-    document.getElementById('guidance-sound-name').textContent = `${p.name} (${p.category})`;
-    document.getElementById('guidance-placement-text').textContent = p.soundLevel.placement;
-    document.getElementById('guidance-airflow-text').textContent = p.soundLevel.airflow;
-
-    const isUnlocked = p.unlocked3D || window.appState.unlockedPhonemes.has(p.id);
+  setDemonstrationVideo(videoUrl) {
+    const video = document.getElementById('embedded-custom-video');
+    const poster = document.getElementById('video-poster-stage');
     const badge = document.getElementById('badge-video-status');
+    if (video) {
+      video.src = videoUrl;
+      video.style.display = 'block';
+      video.load();
+      video.play().catch(() => {});
+    }
+    if (poster) poster.style.display = 'none';
     if (badge) {
-      if (isUnlocked) {
-        badge.className = 'badge-3d-status unlocked';
-        badge.textContent = '🔓 3D/2D Guided Module Unlocked by Therapist Dr. Ritu';
-      } else {
-        badge.className = 'badge-3d-status';
-        badge.textContent = '🎬 3D & 2D Video Slot Ready';
-      }
+      badge.className = 'badge-3d-status unlocked';
+      badge.textContent = '🔓 Clinical Demonstration Video Unlocked!';
     }
-
-    document.getElementById('struggle-alert-box').classList.remove('active');
   }
 
-  playPhoneticCadence() {
-    window.soundSFX.playPop();
-    const btn = document.getElementById('btn-play-cadence');
-    btn.disabled = true;
-    btn.textContent = '🔊 Playing...';
-
-    window.speechEngine.speakPhonemeCadence(this.currentPhoneme, this.currentLevel, () => {
-      btn.disabled = false;
-      btn.textContent = '🔊 Listen Target Sound';
-    });
-  }
-
-  playSyllablesRhythm() {
-    window.soundSFX.playPop();
-    const syllables = this.currentPhoneme.wordLevel.syllables;
-
-    window.speechEngine.speakSyllablesSequentially(
-      syllables,
-      (activeIdx) => {
-        document.querySelectorAll('.syllable-pill').forEach((pill, idx) => {
-          pill.classList.toggle('active', idx === activeIdx);
-        });
-      },
-      () => {
-        document.querySelectorAll('.syllable-pill').forEach(pill => pill.classList.remove('active'));
-      }
-    );
-  }
-
-  toggleLiveSpeechRecording() {
-    const micBtn = document.getElementById('btn-duo-mic');
-    if (window.speechEngine.isListening) {
-      window.speechEngine.stopListening();
-      micBtn.classList.remove('recording');
-      micBtn.innerHTML = '🎤';
-      return;
-    }
-
-    window.speechEngine.startListening({
-      phoneme: this.currentPhoneme,
-      level: this.currentLevel,
-      onStart: () => {
-        micBtn.classList.add('recording');
-        micBtn.innerHTML = '⏹️';
-        window.soundSFX.playPop();
-        this.updatePetDialogue("Listening closely! Speak clearly into your mic!");
-      },
-      onResult: (evalResult) => {
-        micBtn.classList.remove('recording');
-        micBtn.innerHTML = '🎤';
-        this.handlePronunciationResult(evalResult);
-      },
-      onError: (err) => {
-        micBtn.classList.remove('recording');
-        micBtn.innerHTML = '🎤';
-        this.updatePetDialogue("Mic inactive or blocked. Try the 'Testing Controls' buttons below to practice and earn points!");
-      },
-      onEnd: () => {
-        micBtn.classList.remove('recording');
-        micBtn.innerHTML = '🎤';
-      }
-    });
-  }
-
-  handlePronunciationResult(result) {
+  async handlePronunciationResult(result) {
     const feedbackCard = document.getElementById('feedback-result-card');
     feedbackCard.classList.add('active');
+
+    // Extract audio and CV features for backend
+    const audioFeatures = window.AudioFeatureEngine ? window.AudioFeatureEngine.stopAndExtractFeatures() : null;
+    const mouthFeatures = window.CvEngine ? window.CvEngine.getLatestMouthFeatures() : null;
+
+    let serverAttempt = null;
+    if (window.apiClient && window.apiClient.isAuthenticated() && this.activePracticeSessionId) {
+      try {
+        this.attemptCounter = (this.attemptCounter || 0) + 1;
+        serverAttempt = await window.apiClient.submitPracticeAttempt(this.activePracticeSessionId, {
+          attemptNumber: this.attemptCounter,
+          targetPhoneme: this.currentPhoneme.symbol,
+          recognizedText: result.transcript,
+          recognitionConfidence: Number((result.score / 100).toFixed(2)),
+          audioFeatures,
+          mouthFeatures,
+        });
+
+        if (serverAttempt && typeof serverAttempt.consecutiveFailures === 'number') {
+          this.consecutiveFailures = serverAttempt.consecutiveFailures;
+        }
+      } catch (err) {
+        console.warn('[StudentView] Backend attempt logging note:', err.message || err);
+      }
+    }
 
     if (result.isSuccess) {
       feedbackCard.classList.remove('struggle');
@@ -892,7 +803,9 @@ class StudentViewController {
       feedbackCard.classList.add('struggle');
       window.soundSFX.playGentleTryAgain();
 
-      this.consecutiveFailures += 1;
+      if (!serverAttempt) {
+        this.consecutiveFailures += 1;
+      }
       this.updateAttemptCounterUI();
 
       document.getElementById('feedback-score-badge').textContent = `🌱 Score: ${result.score}% (Placement Adjustment Needed)`;
@@ -930,26 +843,42 @@ class StudentViewController {
     const alertBox = document.getElementById('struggle-alert-box');
     if (alertBox) alertBox.classList.add('active');
 
-    this.updatePetDialogue("Don't worry! Dr. Ritu was notified to unlock a helpful 3D/2D video guide for us!");
+    this.updatePetDialogue("Don't worry! Dr. Ritu was notified to unlock a helpful clinical video guide for us!");
+
+    // Also notify socket server if connected
+    if (window.socketClient) {
+      window.socketClient.emit('STUDENT_FAILURE_THRESHOLD', {
+        studentId: window.appState?.activeStudentDbId || 1,
+        phonemeId: this.currentPhoneme?.backendId || 1,
+        count: 5,
+      });
+    }
 
     const struggleAlertData = {
       id: Date.now(),
-      studentName: "Aarav Sharma",
+      studentName: window.appState?.studentName || "Aarav Sharma",
       phonemeId: this.currentPhoneme.id,
       phonemeSymbol: this.currentPhoneme.symbol,
       phonemeName: this.currentPhoneme.name,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       consecutiveFailures: 5,
-      resolved: false
+      resolved: false,
     };
 
     window.appState.addStruggleAlert(struggleAlertData);
 
     window.appState.showToast(
       '🚨 5-Failure Struggle Triggered',
-      `Therapist alerted: Aarav Sharma struggled with '${this.currentPhoneme.symbol}'. 3D Guided Video requested!`,
+      `Therapist alerted: Aarav Sharma struggled with '${this.currentPhoneme.symbol}'. Demonstration Video requested!`,
       'alert'
     );
+
+    // Prompt sensory calming regulation break
+    setTimeout(() => {
+      if (window.RegulationBreak) {
+        window.RegulationBreak.startBreak();
+      }
+    }, 1200);
   }
 
   hideFeedback() {

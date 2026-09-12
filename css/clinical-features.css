@@ -1,0 +1,574 @@
+/* =========================================================
+   CLINICAL FEATURES & PEDIATRIC EXTENSIONS
+   ArticuTwin™ CV Mirror, Root-Cause Diagnostics, SLP Speech Buddy & Regulation
+   ========================================================= */
+
+/* --- Floating SLP Speech Buddy Launcher & Drawer --- */
+.slp-chatbot-launcher {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4), 0 2px 6px rgba(0,0,0,0.1);
+  border: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  z-index: 9998;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.slp-chatbot-launcher:hover {
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.55);
+}
+
+.slp-chatbot-launcher .launcher-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 900;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.slp-chatbot-drawer {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  width: 370px;
+  max-width: calc(100vw - 36px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.25), 0 4px 12px rgba(0,0,0,0.08);
+  border: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.slp-chatbot-drawer.active {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chatbot-header {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  padding: 16px 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatbot-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chatbot-title-group .avatar {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.chatbot-title-group h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.chatbot-title-group p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.chatbot-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.chatbot-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.chatbot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  max-width: 85%;
+  animation: fadeInMsg 0.25s ease;
+}
+
+@keyframes fadeInMsg {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-msg.buddy {
+  align-self: flex-start;
+}
+
+.chat-msg .msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.chat-msg.user .msg-avatar {
+  background: #fef08a;
+}
+
+.chat-msg .msg-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.chat-msg.buddy .msg-bubble {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-top-left-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.chat-msg.user .msg-bubble {
+  background: #0284c7;
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+
+.chatbot-input-bar {
+  padding: 12px 16px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+}
+
+.chatbot-input-bar input {
+  flex: 1;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.chatbot-input-bar input:focus {
+  border-color: #0284c7;
+}
+
+.chatbot-input-bar button {
+  background: #0284c7;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chatbot-input-bar button:hover {
+  background: #0369a1;
+}
+
+/* --- Computer Vision Articulatory Mirror Match Card --- */
+.cv-mirror-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px solid #e2e8f0;
+  padding: 16px;
+  margin-top: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.cv-mirror-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cv-mirror-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cv-mirror-title-wrap h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.cv-mirror-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #0f172a;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cv-mirror-video,
+.cv-mirror-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cv-mirror-canvas {
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cv-mirror-biofeedback-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+  z-index: 3;
+}
+
+.biofeedback-ring-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.biofeedback-ring-svg {
+  width: 40px;
+  height: 40px;
+  transform: rotate(-90deg);
+}
+
+.biofeedback-ring-bg {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 4;
+  fill: none;
+}
+
+.biofeedback-ring-fill {
+  stroke: #22c55e;
+  stroke-width: 4;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 20;
+  stroke-linecap: round;
+  fill: none;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* --- Sensory Regulation Calming Break Modal --- */
+.regulation-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.regulation-modal-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 32px 28px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  border: 3px solid #38bdf8;
+  animation: popInModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popInModal {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.regulation-modal-card .reg-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.regulation-modal-card h3 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.regulation-modal-card p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.breathing-circle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 160px;
+  margin: 10px 0 20px;
+}
+
+.breathing-circle {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+  transition: all 0.3s ease;
+}
+
+.breathing-circle.animate {
+  animation: breathePulse 8s infinite ease-in-out;
+}
+
+@keyframes breathePulse {
+  0%, 100% {
+    transform: scale(0.9);
+    background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 100%);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+  }
+  50% {
+    transform: scale(1.4);
+    background: radial-gradient(circle, #fef08a 0%, #f59e0b 100%);
+    color: #78350f;
+    box-shadow: 0 0 35px rgba(245, 158, 11, 0.6);
+  }
+}
+
+.reg-timer {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+/* --- Therapist Diagnostics & Video Box --- */
+.studio-video-box {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #020617;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 2px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.studio-diagnostics-panel {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 22px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.cluster-card {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.cluster-card h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cluster-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cluster-pill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.cluster-pill.failing {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* --- Reviewer Demo 1-Click Access Buttons --- */
+.btn-role-demo-login {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-role-demo-login:hover {
+  background: #fef08a;
+  border-color: #eab308;
+  color: #854d0e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+}
+
+.demo-login-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0 12px 0;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.demo-login-separator::before,
+.demo-login-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.demo-login-separator span {
+  padding: 0 10px;
+}
+
+.btn-instant-demo-login {
+  width: 100%;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+  border: 2px solid #eab308;
+  border-radius: 14px;
+  color: #854d0e;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.25);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: inherit;
+}
+
+.btn-instant-demo-login:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(234, 179, 8, 0.4);
+  background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
+}

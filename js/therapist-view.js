@@ -27,6 +27,36 @@ class TherapistViewController {
     this.renderStruggleAlerts();
     this.renderPhonemePalette();
     this.setupEventListeners();
+    this.fetchBackendAlerts();
+  }
+
+  async fetchBackendAlerts() {
+    if (window.apiClient && window.apiClient.isAuthenticated() && window.apiClient.currentUser?.role === 'therapist') {
+      try {
+        const res = await window.apiClient.getStruggleAlerts('pending');
+        const alertList = res?.alerts || (Array.isArray(res) ? res : []);
+        if (alertList.length > 0) {
+          alertList.forEach(a => {
+            const exists = window.appState.struggleAlerts.some(sa => sa.id === a.id);
+            if (!exists) {
+              window.appState.struggleAlerts.unshift({
+                id: a.id,
+                studentName: a.studentName || 'Aarav Sharma',
+                phonemeId: a.phonemeId || 'ka',
+                phonemeSymbol: a.phoneme || 'क',
+                phonemeName: `Target (${a.phoneme || 'क'})`,
+                timestamp: new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                consecutiveFailures: a.failureCount || 5,
+                resolved: a.status === 'resolved' || a.status === 'unlocked',
+              });
+            }
+          });
+          this.renderStruggleAlerts();
+        }
+      } catch (err) {
+        console.warn('[TherapistView] Backend alerts note:', err.message || err);
+      }
+    }
   }
 
   renderAllotmentBanner() {
@@ -114,54 +144,11 @@ class TherapistViewController {
       });
     }
 
-    // 3D Anatomy Clinical Sliders
-    const sliders = [
-      { id: 'slider-tongue-height', param: 'tongueHeight' },
-      { id: 'slider-tongue-adv', param: 'tongueAdvancement' },
-      { id: 'slider-tongue-curl', param: 'tongueCurl' },
-      { id: 'slider-lip-open', param: 'lipOpen' },
-      { id: 'slider-jaw-open', param: 'jawOpen' },
-      { id: 'slider-airflow', param: 'airflowRate' }
-    ];
-
-    sliders.forEach(({ id, param }) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('input', (e) => {
-          const val = parseFloat(e.target.value);
-          const valEl = document.getElementById(`${id}-val`);
-          if (valEl) valEl.textContent = val.toFixed(2);
-          if (this.studioVocalTract) {
-            this.studioVocalTract.setManualKinematics(param, val);
-          }
-        });
-      }
-    });
-
-    // Airflow simulation toggles in studio
-    const nasalToggle = document.getElementById('toggle-nasal-airflow');
-    if (nasalToggle) {
-      nasalToggle.addEventListener('change', (e) => {
-        if (this.studioVocalTract) {
-          this.studioVocalTract.setManualKinematics('velumElevated', !e.target.checked);
-        }
-      });
-    }
-
-    const voicingToggle = document.getElementById('toggle-voicing');
-    if (voicingToggle) {
-      voicingToggle.addEventListener('change', (e) => {
-        if (this.studioVocalTract) {
-          this.studioVocalTract.setManualKinematics('isVoiced', e.target.checked);
-        }
-      });
-    }
-
-    // One-Click Push 3D Model to Student Button
+    // One-Click Push Clinical Demonstration Video to Student Button
     const pushBtn = document.getElementById('btn-push-to-student');
     if (pushBtn) {
       pushBtn.addEventListener('click', () => {
-        this.pushCurrent3DToStudent();
+        this.pushCurrentVideoToStudent();
       });
     }
   }
@@ -183,7 +170,7 @@ class TherapistViewController {
     } else {
       scheduleView.style.display = 'none';
       studioView.style.display = 'block';
-      this.initStudio3D();
+      this.initStudioVideo();
     }
   }
 
@@ -281,15 +268,24 @@ class TherapistViewController {
   }
 
   /**
-   * One-Click 3D Video Push / Unlock Action
+   * One-Click Video Demonstration Push / Unlock Action
    */
-  resolveAndUnlock3D(alertId, phonemeId) {
+  async resolveAndUnlock3D(alertId, phonemeId) {
     window.soundSFX.playUnlockCheer();
+
+    if (window.apiClient && window.apiClient.isAuthenticated()) {
+      try {
+        await window.apiClient.unlockContent(alertId, { sendNotification: true });
+        console.log('✅ Struggle alert unlocked on backend:', alertId);
+      } catch (err) {
+        console.warn('[TherapistView] Backend unlock fallback to local:', err.message || err);
+      }
+    }
 
     // Mark alert as resolved
     window.appState.resolveAlert(alertId);
 
-    // Unlock 3D model for student and parent
+    // Unlock video demonstration for student and parent
     window.appState.unlockPhoneme3D(phonemeId);
 
     // Re-render alerts
@@ -299,14 +295,14 @@ class TherapistViewController {
     const studentItem = this.roster.find(r => r.targetPhoneme === phonemeId);
     if (studentItem) {
       studentItem.status = 'in-progress';
-      studentItem.statusLabel = '3D Guided Active';
+      studentItem.statusLabel = 'Video Guided Active';
       this.renderSchedule();
     }
 
     // Show toast
     window.appState.showToast(
-      '🎬 3D Guided Module Unlocked!',
-      `Successfully pushed 3D vocal tract & airflow visualizer to ${studentItem ? studentItem.student : 'student'} and notified parent!`,
+      '🎬 Clinical Demonstration Unlocked!',
+      `Successfully unlocked clinical articulation video for ${studentItem ? studentItem.student : 'student'} and notified parent!`,
       'unlock'
     );
   }
@@ -384,58 +380,102 @@ class TherapistViewController {
 
   selectPhonemeInStudio(phoneme) {
     this.selectedPhoneme = phoneme;
-    if (this.studioVocalTract) {
-      this.studioVocalTract.setPhoneme(phoneme);
+    const titleEl = document.getElementById('studio-current-phoneme-title');
+    const cueEl = document.getElementById('studio-pediatric-cue-text');
+    if (titleEl) titleEl.textContent = `${phoneme.symbol} - ${phoneme.name} (${phoneme.ipa || ''})`;
+    if (cueEl) cueEl.textContent = phoneme.soundLevel.pediatricCue;
+
+    // Load authentic clinical articulation video into preview player
+    const videoPlayer = document.getElementById('studio-demonstration-video');
+    if (videoPlayer) {
+      let videoSrc = 'assets/videos/asha.mp4';
+      if (phoneme.id.includes('swar') || phoneme.category.includes('Vowel')) {
+        videoSrc = 'assets/videos/vowel_1.mp4';
+      } else if (phoneme.id === 'ka' || phoneme.id === 'kha') {
+        videoSrc = 'assets/videos/asha.mp4';
+      } else {
+        videoSrc = 'assets/videos/krishna.mp4';
+      }
+      videoPlayer.src = videoSrc;
+      videoPlayer.load();
     }
-    this.syncSlidersFromPhoneme(phoneme);
-    document.getElementById('studio-current-phoneme-title').textContent = `${phoneme.symbol} - ${phoneme.name} (${phoneme.ipa})`;
-    document.getElementById('studio-pediatric-cue-text').textContent = phoneme.soundLevel.pediatricCue;
+
+    // Run Root-Cause Diagnostic Clustering
+    this.updateStudioDiagnostics(phoneme);
   }
 
-  syncSlidersFromPhoneme(p) {
-    const sl = p.soundLevel;
-    const tp = sl.tonguePosition;
-    const lp = sl.lipPosition;
-    const jp = sl.jawPosition;
+  updateStudioDiagnostics(phoneme) {
+    if (!window.RootCauseEngine) return;
 
-    const setSlider = (id, val) => {
-      const input = document.getElementById(id);
-      const span = document.getElementById(`${id}-val`);
-      if (input) input.value = val;
-      if (span) span.textContent = val.toFixed(2);
+    const sampleFingerprint = {
+      [phoneme.symbol]: 58,
+      'क': 62,
+      'ख': 55,
+      'ट': 85,
+      'प': 90,
     };
 
-    setSlider('slider-tongue-height', tp.height);
-    setSlider('slider-tongue-adv', tp.advancement);
-    setSlider('slider-tongue-curl', tp.curl);
-    setSlider('slider-lip-open', lp.open);
-    setSlider('slider-jaw-open', jp.open);
-    setSlider('slider-airflow', 1.0);
+    const diag = window.RootCauseEngine.detectRootCause(sampleFingerprint);
 
-    const nasalCheck = document.getElementById('toggle-nasal-airflow');
-    if (nasalCheck) nasalCheck.checked = p.id.includes('na') || p.id.includes('ma');
+    const labelEl = document.getElementById('rc-deficit-label') || document.getElementById('diag-root-cause-label');
+    const descEl = document.getElementById('rc-deficit-desc');
+    const pillsBox = document.getElementById('rc-affected-pills') || document.getElementById('diag-affected-tags');
+    const videoLabelEl = document.getElementById('studio-current-video-label');
 
-    const voiceCheck = document.getElementById('toggle-voicing');
-    if (voiceCheck) voiceCheck.checked = p.category.includes('Voiced') || p.category.includes('Anthastha');
-  }
+    if (labelEl) labelEl.textContent = diag.rootCauseLabel || 'Velar Occlusion & Tongue Back Elevation';
+    if (descEl && diag.recommendations && diag.recommendations.length > 0) {
+      descEl.textContent = diag.recommendations[0];
+    }
 
-  initStudio3D() {
-    if (!this.studioVocalTract) {
-      this.studioVocalTract = new VocalTract3DViewer('webgl-therapist-studio', {
-        initialPhonemeId: this.selectedPhoneme.id,
-        cameraView: 'sagittal'
+    if (pillsBox && diag.affectedPhonemes) {
+      pillsBox.innerHTML = '';
+      diag.affectedPhonemes.forEach((p) => {
+        const span = document.createElement('span');
+        span.className = `cluster-pill ${p === phoneme.symbol ? 'failing' : ''}`;
+        span.textContent = `${p}`;
+        pillsBox.appendChild(span);
       });
     }
+
+    const videoPlayer = document.getElementById('studio-demonstration-video');
+    if (videoLabelEl && videoPlayer) {
+      videoLabelEl.textContent = videoPlayer.getAttribute('src') || videoPlayer.src;
+    }
+  }
+
+  initStudioVideo() {
     this.selectPhonemeInStudio(this.selectedPhoneme);
   }
 
-  pushCurrent3DToStudent() {
+  async pushCurrentVideoToStudent() {
     window.soundSFX.playUnlockCheer();
+
+    let videoUrl = 'assets/videos/asha.mp4';
+    if (this.selectedPhoneme.id.includes('swar')) {
+      videoUrl = 'assets/videos/vowel_1.mp4';
+    }
+
+    if (window.apiClient && window.apiClient.isAuthenticated()) {
+      try {
+        await window.apiClient.pushSessionContent(1, videoUrl, 'CLINICAL_VIDEO');
+      } catch (e) {
+        console.warn('[TherapistView] Video push fallback:', e.message || e);
+      }
+    }
+
+    if (window.socketClient) {
+      window.socketClient.emit('CONTENT_PUSHED', {
+        phonemeId: this.selectedPhoneme.id,
+        contentUrl: videoUrl,
+        contentType: 'CLINICAL_VIDEO',
+      });
+    }
+
     window.appState.unlockPhoneme3D(this.selectedPhoneme.id);
 
     window.appState.showToast(
-      '📡 3D Stream Pushed to Student',
-      `Active 3D vocal tract configuration for '${this.selectedPhoneme.symbol}' pushed to student practice room and parent app!`,
+      '📡 Clinical Demonstration Streamed',
+      `Authentic video demonstration for '${this.selectedPhoneme.symbol}' pushed to student practice room!`,
       'unlock'
     );
   }

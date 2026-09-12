@@ -19,8 +19,7 @@
   <link rel="stylesheet" href="css/parent-portal.css?v=6">
   <link rel="stylesheet" href="css/settings-panel.css?v=6">
 
-  <!-- Three.js CDN for 3D Anatomical Articulatory Visualization -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="css/clinical-features.css?v=6">
 </head>
 <body>
 
@@ -194,6 +193,9 @@
             <h4 class="role-card-title">Student Explorer</h4>
             <span class="role-card-tag">Joy's Memory Trail 🔮</span>
             <p class="role-card-desc">Interactive phoneme practice, slow-motion audio cadence, 3D tongue visualizer & pet boutique.</p>
+            <button type="button" class="btn-role-demo-login" onclick="event.stopPropagation(); window.heroController.loginAsDemo('student');" title="Instant 1-Click Demo Login as Aarav Sharma">
+              <span>⚡ 1-Click Demo (Aarav)</span>
+            </button>
           </div>
 
           <!-- Therapist Card -->
@@ -203,6 +205,9 @@
             <h4 class="role-card-title">Clinician / SLP</h4>
             <span class="role-card-tag" style="color: #0284c7;">5-Failure Live Alert 🚨</span>
             <p class="role-card-desc">Clinical telepractice cockpit, real-time struggle alerts, anatomical plane inspection & video module unlocks.</p>
+            <button type="button" class="btn-role-demo-login" onclick="event.stopPropagation(); window.heroController.loginAsDemo('therapist');" title="Instant 1-Click Demo Login as Dr. Ritu Nair">
+              <span>⚡ 1-Click Demo (Dr. Ritu)</span>
+            </button>
           </div>
 
           <!-- Parent Card -->
@@ -212,6 +217,9 @@
             <h4 class="role-card-title">Parent / Caregiver</h4>
             <span class="role-card-tag" style="color: #10b981;">Adherence Heatmap 📅</span>
             <p class="role-card-desc">Daily practice adherence heatmaps, sound mastery progress curves, and therapist clinical notes feed.</p>
+            <button type="button" class="btn-role-demo-login" onclick="event.stopPropagation(); window.heroController.loginAsDemo('parent');" title="Instant 1-Click Demo Login as Pooja Sharma">
+              <span>⚡ 1-Click Demo (Pooja)</span>
+            </button>
           </div>
         </div>
 
@@ -278,6 +286,16 @@
           <button type="submit" class="btn-auth-submit" id="btn-submit-signin">
             <span>🚀</span>
             <span id="btn-submit-signin-label">Sign In to Student Studio →</span>
+          </button>
+
+          <!-- 1-Click Demo Login Button -->
+          <div class="demo-login-separator">
+            <span>OR INSTANT DEMO ACCESS</span>
+          </div>
+
+          <button type="button" class="btn-instant-demo-login" id="btn-instant-demo-login" onclick="window.heroController.loginCurrentRoleDemo();">
+            <span>⚡</span>
+            <span id="btn-instant-demo-label">1-Click Demo Login as Aarav Sharma</span>
           </button>
         </form>
 
@@ -574,6 +592,38 @@
                   ⚠️ Simulate Struggle (Test 5-Failure)
                 </button>
               </div>
+
+              <!-- Computer Vision Articulatory Mirror Match -->
+              <div class="cv-mirror-card" id="cv-mirror-card">
+                <div class="cv-mirror-header">
+                  <div class="cv-mirror-title-wrap">
+                    <span>🪞</span>
+                    <h4>Articulatory Mirror Match (FaceMesh CV)</h4>
+                  </div>
+                  <button type="button" class="btn-duo btn-blue btn-sm" id="btn-toggle-mirror" onclick="if(window.CvEngine && window.CvEngine.isCameraRunning){window.CvEngine.stopCamera(); this.innerHTML='<span>📷</span> <span>Start CV Mirror</span>';} else {if(window.CvEngine) window.CvEngine.startCamera(); this.innerHTML='<span>⏹️</span> <span>Stop Mirror</span>';}">
+                    <span>📷</span> <span>Start CV Mirror</span>
+                  </button>
+                </div>
+                <div class="cv-mirror-stage">
+                  <video id="mirror-video" class="cv-mirror-video" playsinline muted></video>
+                  <canvas id="mirror-canvas" class="cv-mirror-canvas" width="320" height="240"></canvas>
+                  <div class="cv-mirror-biofeedback-overlay">
+                    <div class="biofeedback-ring-wrap">
+                      <svg class="biofeedback-ring-svg" viewBox="0 0 40 40">
+                        <circle class="biofeedback-ring-bg" cx="20" cy="20" r="16"></circle>
+                        <circle class="biofeedback-ring-fill" id="mirror-progress-bar" cx="20" cy="20" r="16"></circle>
+                      </svg>
+                      <div>
+                        <div style="font-size: 10px; color: #94a3b8; font-weight: 700;">MIRROR MATCH</div>
+                        <div style="font-size: 14px; font-weight: 900; color: #38bdf8;" id="mirror-match-pct">85%</div>
+                      </div>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-align: right;">
+                      Lip Aperture & Jaw Sync
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -761,59 +811,56 @@
                   Dragon cough! Tap back of tongue to soft palate.
                 </p>
               </div>
-              <button class="btn-duo btn-coral" id="btn-push-to-student">
-                📡 Push 3D Video Module to Student
-              </button>
             </div>
 
-            <!-- Studio 3D Canvas -->
-            <div class="studio-3d-box" id="webgl-therapist-studio"></div>
+            <!-- Clinical Video Demonstration Box -->
+            <div class="studio-video-box">
+              <video id="studio-demonstration-video" controls playsinline style="width: 100%; height: 100%; object-fit: cover;" src="assets/videos/vowel_1.mp4"></video>
+            </div>
 
-            <!-- Sliders -->
-            <div class="studio-controls-panel">
-              <h4 style="font-size: 15px; font-weight: 900; margin-bottom: 14px; color: var(--text-main);">
-                🎛️ Clinical Kinematic & Airflow Controls
-              </h4>
-              <div class="sliders-grid">
-                <div class="slider-field">
-                  <label>Tongue Height: <span id="slider-tongue-height-val">0.85</span></label>
-                  <input type="range" id="slider-tongue-height" min="0.0" max="1.0" step="0.05" value="0.85">
+            <!-- ArticuTwin™ Root-Cause Articulatory Diagnostics & Prescription Panel -->
+            <div class="studio-diagnostics-panel" id="studio-diagnostics-panel" style="margin-top: 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h4 style="font-size: 15px; font-weight: 900; color: var(--text-main, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <span>🧬</span> ArticuTwin™ Root-Cause Diagnostic Clustering
+                </h4>
+                <span style="font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 999px;">
+                  AI Articulatory Correlation
+                </span>
+              </div>
+
+              <div id="studio-root-cause-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="cluster-card">
+                  <h5><span>🔍</span> Primary Articulatory Deficit</h5>
+                  <div style="font-size: 16px; font-weight: 900; color: #0284c7; margin-bottom: 4px;" id="rc-deficit-label">
+                    Velar Occlusion & Tongue Back Elevation
+                  </div>
+                  <p style="font-size: 12px; color: #64748b; margin: 0;" id="rc-deficit-desc">
+                    Child struggles with elevating posterior tongue to soft palate.
+                  </p>
                 </div>
-                <div class="slider-field">
-                  <label>Tongue Advancement: <span id="slider-tongue-adv-val">-0.65</span></label>
-                  <input type="range" id="slider-tongue-adv" min="-1.0" max="1.0" step="0.05" value="-0.65">
-                </div>
-                <div class="slider-field">
-                  <label>Tongue Tip Curl: <span id="slider-tongue-curl-val">0.00</span></label>
-                  <input type="range" id="slider-tongue-curl" min="0.0" max="1.0" step="0.05" value="0.0">
-                </div>
-                <div class="slider-field">
-                  <label>Lip Aperture: <span id="slider-lip-open-val">0.40</span></label>
-                  <input type="range" id="slider-lip-open" min="0.0" max="1.0" step="0.05" value="0.4">
-                </div>
-                <div class="slider-field">
-                  <label>Mandibular Jaw: <span id="slider-jaw-open-val">0.35</span></label>
-                  <input type="range" id="slider-jaw-open" min="0.0" max="1.0" step="0.05" value="0.35">
-                </div>
-                <div class="slider-field">
-                  <label>Airflow Velocity: <span id="slider-airflow-val">1.00</span></label>
-                  <input type="range" id="slider-airflow" min="0.2" max="2.5" step="0.1" value="1.0">
+
+                <div class="cluster-card">
+                  <h5><span>⚠️</span> Untested Phonemes at Risk</h5>
+                  <div class="cluster-pills-row" id="rc-affected-pills">
+                    <span class="cluster-pill failing">क (/k/)</span>
+                    <span class="cluster-pill">ख (/kʰ/)</span>
+                    <span class="cluster-pill">ग (/ɡ/)</span>
+                    <span class="cluster-pill">घ (/ɡʱ/)</span>
+                  </div>
+                  <p style="font-size: 11px; color: #94a3b8; margin: 6px 0 0 0;">
+                    Predicted high struggle probability due to shared velar closure mechanism.
+                  </p>
                 </div>
               </div>
 
-              <div class="clinical-action-bar">
-                <div style="display: flex; gap: 20px; align-items: center;">
-                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; cursor: pointer;">
-                    <input type="checkbox" id="toggle-nasal-airflow">
-                    <span>Nasal Airflow (Velic Open)</span>
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; cursor: pointer;">
-                    <input type="checkbox" id="toggle-voicing">
-                    <span>Vocal Fold Vibration</span>
-                  </label>
+              <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Active Demonstration Video</div>
+                  <div style="font-size: 13px; font-weight: 800; color: #0284c7;" id="studio-current-video-label">assets/videos/vowel_1.mp4</div>
                 </div>
-                <button class="btn-duo btn-blue btn-sm" onclick="window.soundSFX.playCorrect();">
-                  💾 Save Articulation Preset
+                <button class="btn-duo btn-coral" id="btn-push-to-student" onclick="window.therapistController.pushCurrentVideoToStudent();" style="padding: 10px 18px; font-size: 13px;">
+                  📡 Push Video Demonstration to Student
                 </button>
               </div>
             </div>
@@ -1320,20 +1367,63 @@
     </div>
   </aside>
 
+  <!-- Floating SLP Speech Buddy Chatbot -->
+  <button class="slp-chatbot-launcher" id="slp-chatbot-launcher" onclick="window.SpeechBuddy.toggle()" title="Chat with SLP Speech Buddy">
+    <span>🩺</span>
+    <span class="launcher-badge">1</span>
+  </button>
+
+  <div class="slp-chatbot-drawer" id="slp-chatbot-drawer">
+    <div class="chatbot-header">
+      <div class="chatbot-title-group">
+        <div class="avatar">🩺</div>
+        <div>
+          <h4>SLP Speech Buddy</h4>
+          <p>Pediatric Speech & Articulation Guide</p>
+        </div>
+      </div>
+      <button type="button" class="chatbot-close-btn" onclick="window.SpeechBuddy.toggle()">✕</button>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages">
+      <div class="chat-msg buddy">
+        <div class="msg-avatar">🩺</div>
+        <div class="msg-bubble">
+          Hello explorer! I'm your SLP Speech Buddy! Ask me how to place your tongue for any sound, or ask how practice works! ✨
+        </div>
+      </div>
+    </div>
+    <div class="chatbot-input-bar">
+      <input type="text" id="chatbot-input" placeholder="Ask about tongue placement, /k/ sound..." onkeydown="if(event.key==='Enter') window.SpeechBuddy.sendMessage();">
+      <button type="button" id="btn-chatbot-send" onclick="window.SpeechBuddy.sendMessage()">Send</button>
+    </div>
+  </div>
+
   <!-- Duolingo / Inside Out Toast Notification Stack -->
   <div class="duo-toast-container" id="duo-toast-container"></div>
 
-  <!-- Scripts -->
-  <script src="js/phoneme-data.js"></script>
-  <script src="js/audio-sfx.js"></script>
-  <script src="js/speech-engine.js"></script>
-  <script src="js/three-vocal-tract.js"></script>
-  <script src="js/student-view.js"></script>
-  <script src="js/therapist-view.js"></script>
-  <script src="js/parent-view.js"></script>
-  <script src="js/hero-controller.js"></script>
-  <script src="js/settings-controller.js"></script>
-  <script src="js/app.js"></script>
+  <!-- External Libraries & Engines -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="js/api-client.js?v=7"></script>
+  <script src="js/socket-client.js?v=7"></script>
+
+  <!-- Core Knowledge & Engines -->
+  <script src="js/phoneme-data.js?v=7"></script>
+  <script src="js/articulatory-kb.js?v=7"></script>
+  <script src="js/root-cause-engine.js?v=7"></script>
+  <script src="js/audio-sfx.js?v=7"></script>
+  <script src="js/speech-engine.js?v=7"></script>
+  <script src="js/audio-feature-engine.js?v=7"></script>
+  <script src="js/cv-engine.js?v=7"></script>
+  <script src="js/chatbot.js?v=7"></script>
+  <script src="js/regulation-break.js?v=7"></script>
+
+  <!-- View Controllers -->
+  <script src="js/student-view.js?v=7"></script>
+  <script src="js/therapist-view.js?v=7"></script>
+  <script src="js/parent-view.js?v=7"></script>
+  <script src="js/hero-controller.js?v=7"></script>
+  <script src="js/settings-controller.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 
 </body>
 </html>

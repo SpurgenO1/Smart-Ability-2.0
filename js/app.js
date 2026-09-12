@@ -497,6 +497,13 @@ class AppStateManager {
     this.isLoggedIn = false;
     this.currentRole = 'hero';
 
+    if (window.apiClient) {
+      window.apiClient.logout();
+    }
+    if (window.socketClient) {
+      window.socketClient.disconnect();
+    }
+
     // Hide session area in header
     const sessionArea = document.getElementById('header-session-area');
     if (sessionArea) sessionArea.style.display = 'none';
@@ -706,8 +713,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.settingsController.init();
   }
 
-  // Start on the interactive Hero Landing Page
-  window.appState.switchRole('hero');
+  // Restore authenticated session if valid token exists, otherwise start on Hero Landing Page
+  if (window.apiClient && window.apiClient.isAuthenticated()) {
+    const user = window.apiClient.currentUser;
+    const role = user?.role || 'student';
+    console.log(`[App] Restoring authenticated ${role} session for ${user?.email || 'user'}`);
+    window.appState.loginAs(role);
+    if (window.socketClient) {
+      window.socketClient.connect();
+    }
+  } else {
+    window.appState.switchRole('hero');
+  }
 
   console.log("Smart Articulation Training System initialized with Hero Landing Page, Inside Out theme, Unique Child IDs & Parent Pairing.");
 });

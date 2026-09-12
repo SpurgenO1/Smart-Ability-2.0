@@ -262,6 +262,38 @@ class HeroPageController {
       if (btnSubmitSignin) btnSubmitSignin.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
       if (btnSubmitRegister) btnSubmitRegister.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
     }
+
+    const instantDemoBtnLabel = document.getElementById('btn-instant-demo-label');
+    if (instantDemoBtnLabel) {
+      const demoNames = {
+        student: '1-Click Demo Login as Aarav Sharma (Student)',
+        therapist: '1-Click Demo Login as Dr. Ritu Nair (Clinician)',
+        parent: '1-Click Demo Login as Pooja Sharma (Caregiver)',
+      };
+      instantDemoBtnLabel.textContent = demoNames[this.selectedRole] || '1-Click Instant Demo Login';
+    }
+  }
+
+  /* =========================================================
+     DEMO 1-CLICK ACCESS (Isolated for easy removal in future)
+     ========================================================= */
+  async loginAsDemo(role) {
+    const creds = this.demoCredentials[role];
+    if (!creds) return;
+    this.selectedRole = role;
+    this.updateRoleSelectionUI(role);
+
+    const idInput = document.getElementById('signin-identifier');
+    const passInput = document.getElementById('signin-password');
+    if (idInput) idInput.value = creds.identifier;
+    if (passInput) passInput.value = creds.password;
+
+    if (window.soundSFX) window.soundSFX.playPop();
+    await this.completeLogin(role, creds.identifier, creds.password);
+  }
+
+  async loginCurrentRoleDemo() {
+    await this.loginAsDemo(this.selectedRole);
   }
 
   setupDemoAutofill() {
@@ -294,7 +326,7 @@ class HeroPageController {
     // 1. Sign In Form Submission
     const signinForm = document.getElementById('form-auth-signin');
     if (signinForm) {
-      signinForm.addEventListener('submit', (e) => {
+      signinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('signin-identifier')?.value.trim();
         const pass = document.getElementById('signin-password')?.value.trim();
@@ -304,14 +336,14 @@ class HeroPageController {
           return;
         }
 
-        this.completeLogin(this.selectedRole, id);
+        await this.completeLogin(this.selectedRole, id, pass);
       });
     }
 
     // 2. Register Form Submission (Students and Parents ONLY)
     const registerForm = document.getElementById('form-auth-register');
     if (registerForm) {
-      registerForm.addEventListener('submit', (e) => {
+      registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Extra safeguard: prevent registration if therapist role
@@ -329,25 +361,112 @@ class HeroPageController {
           return;
         }
 
-        this.completeRegistration(this.selectedRole, name);
+        await this.completeRegistration(this.selectedRole, name, email, pass);
       });
     }
   }
 
-  completeLogin(role, identifier) {
-    if (window.appState) {
-      window.appState.loginAs(role, identifier);
-      this.closeAuthStage();
+  async completeLogin(role, identifier, password) {
+    const btnSubmit = document.getElementById('btn-submit-signin');
+    const origText = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) btnSubmit.innerHTML = '<span>⏳</span> <span>Verifying credentials...</span>';
+
+    try {
+      if (!window.apiClient) {
+        alert('❌ Internal Error: API Client is not initialized.');
+        return;
+      }
+
+      let authRes;
+      try {
+        authRes = await window.apiClient.login(identifier, password);
+      } catch (apiErr) {
+        console.error('[HeroController] Authentication failed:', apiErr);
+
+        let errorMsg = 'Invalid username/email or password.';
+        if (apiErr.message && !apiErr.message.toLowerCase().includes('failed to fetch')) {
+          errorMsg = apiErr.message;
+        } else if (apiErr.message && apiErr.message.toLowerCase().includes('failed to fetch')) {
+          errorMsg = 'Cannot reach backend at http://localhost:4000. Please ensure the backend is running (run `npm start` in backend/ directory).';
+        }
+
+        alert(`🔒 Authentication Denied:\n${errorMsg}\n\nPlease check your credentials or use the "Auto-fill Demo Account" button.`);
+        return; // STRICT SECURITY: Stop execution immediately! Do not allow unverified access.
+      }
+
+      const userData = authRes?.user;
+      if (!userData) {
+        alert('🔒 Authentication Error: No user profile returned from database.');
+        return;
+      }
+
+      // Role authorization enforcement: prevent cross-portal access
+      if (userData.role !== role) {
+        alert(`⚠️ Role Authorization Mismatch:\nThis account is registered as a "${userData.role.toUpperCase()}", but you are signing in via the "${role.toUpperCase()}" gateway.\n\nPlease select the correct character card to continue.`);
+        if (window.apiClient) window.apiClient.logout();
+        return;
+      }
+
+      console.log('✅ Authenticated successfully with database:', userData);
+      if (window.socketClient) {
+        window.socketClient.connect();
+      }
+
+      if (window.appState) {
+        window.appState.loginAs(role, identifier, userData);
+        this.closeAuthStage();
+      }
+    } finally {
+      if (btnSubmit) btnSubmit.innerHTML = origText;
     }
   }
 
-  completeRegistration(role, name) {
-    if (window.appState) {
-      window.appState.registerAndLogin(role, name);
-      this.closeAuthStage();
+  async completeRegistration(role, name, email, password) {
+    const btnSubmit = document.getElementById('btn-submit-register');
+    const origText = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) btnSubmit.innerHTML = '<span>⏳</span> <span>Registering account...</span>';
+
+    try {
+      if (!window.apiClient) {
+        alert('❌ Internal Error: API Client is not initialized.');
+        return;
+      }
+
+      try {
+        const regRes = await window.apiClient.register({ name, email, password, role });
+        console.log('✅ Account registered in database:', regRes);
+
+        // Immediately authenticate and obtain JWT Bearer tokens
+        const authRes = await window.apiClient.login(email, password);
+        const userData = authRes?.user;
+
+        if (window.socketClient) {
+          window.socketClient.connect();
+        }
+
+        if (window.appState) {
+          window.appState.registerAndLogin(role, name, userData);
+          this.closeAuthStage();
+        }
+      } catch (apiErr) {
+        console.error('[HeroController] Backend registration error:', apiErr);
+
+        let errorMsg = apiErr.message || 'Registration failed.';
+        if (apiErr.code === 'EMAIL_IN_USE') {
+          errorMsg = 'An account with this email already exists in the database. Please sign in instead.';
+        } else if (apiErr.message && apiErr.message.toLowerCase().includes('failed to fetch')) {
+          errorMsg = 'Cannot reach backend at http://localhost:4000. Please ensure the backend is running with `npm start`.';
+        }
+
+        alert(`❌ Registration Failed:\n${errorMsg}`);
+        return; // STRICT SECURITY: Stop execution immediately! Do not allow unverified registration.
+      }
+    } finally {
+      if (btnSubmit) btnSubmit.innerHTML = origText;
     }
   }
 }
 
 // Instantiate global controller
 window.heroController = new HeroPageController();
+

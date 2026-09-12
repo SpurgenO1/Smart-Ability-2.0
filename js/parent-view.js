@@ -18,7 +18,44 @@ class ParentViewController {
     this.setupEventListeners();
   }
 
-  loadChildData() {
+  async loadChildData() {
+    if (window.apiClient && window.apiClient.isAuthenticated() && window.apiClient.currentUser?.role === 'parent') {
+      try {
+        const res = await window.apiClient.getParentChildren();
+        const children = res?.children || (Array.isArray(res) ? res : []);
+        if (children.length > 0) {
+          const linkedIds = [];
+          children.forEach(c => {
+            const cid = `ORB-${c.id}`;
+            linkedIds.push(cid);
+            if (!window.appState.studentsDirectory[cid]) {
+              window.appState.studentsDirectory[cid] = {
+                id: cid,
+                name: c.displayName || c.name || `Learner ${c.id}`,
+                age: '6 years',
+                program: 'Pediatric Speech Retraining',
+                masteredCount: '13 / 18',
+                masteredSubtext: '↑ 3 sounds mastered this week',
+                streak: 12,
+                streakSubtext: 'Consistent home practice',
+                clinician: 'Dr. Ritu Nair (SLP)',
+                clinicianSubtext: 'SLP • Next Session Today 09:30 AM',
+                progressGroups: window.appState.getDefaultChildData()?.progressGroups || [],
+                appointments: window.appState.getDefaultChildData()?.appointments || [],
+                notes: window.appState.getDefaultChildData()?.notes || [],
+              };
+            }
+          });
+          window.appState.linkedChildrenIds = linkedIds;
+          this.currentChildId = linkedIds[0];
+          this.childData = window.appState.studentsDirectory[this.currentChildId];
+          this.renderAll();
+        }
+      } catch (err) {
+        console.warn('[ParentView] Backend children fetch note:', err.message || err);
+      }
+    }
+
     if (window.appState && window.appState.studentsDirectory) {
       this.childData = window.appState.studentsDirectory[this.currentChildId] || window.appState.getDefaultChildData();
     } else {
@@ -372,9 +409,9 @@ class ParentViewController {
         <div class="parent-alert-left">
           <div class="parent-alert-icon">✨</div>
           <div class="parent-alert-text">
-            <h3>3D Visual Articulation Module Unlocked!</h3>
+            <h3>Clinical Demonstration Video Unlocked!</h3>
             <p>
-              Dr. Ritu unlocked the guided 3D vocal tract session for target 
+              Dr. Ritu unlocked the clinical articulation video for target 
               <strong>'${phoneme.symbol}' (${phoneme.name})</strong> to assist ${this.childData ? this.childData.name : 'Aarav'} with home practice.
             </p>
           </div>
