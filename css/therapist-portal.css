@@ -1,0 +1,564 @@
+/* =========================================================
+   THERAPIST PORTAL - CLINICAL SCHEDULE & LIVE 3D STUDIO
+   5-Failure Struggle Center, One-Click 3D Push, Anatomy Sliders
+   ========================================================= */
+
+.therapist-container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+/* Subview switcher in therapist portal: Schedule vs Live Studio */
+.therapist-subnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 20px;
+  border: 2px solid var(--border-card);
+  box-shadow: 0 4px 0 var(--border-card);
+}
+
+.therapist-subnav-links {
+  display: flex;
+  gap: 12px;
+}
+
+.subnav-tab {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subnav-tab.active {
+  background: #eff6ff;
+  color: var(--duo-blue-dark);
+  border-color: #bfdbfe;
+}
+
+/* Therapist Allotment Banner (When new student is allotted) */
+.therapist-allotment-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+  border: 2.5px solid #93c5fd;
+  border-radius: 20px;
+  padding: 18px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.12);
+  animation: slideDownIn 0.3s ease-out;
+}
+
+.allotment-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.allotment-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+  flex-shrink: 0;
+}
+
+.allotment-headline {
+  font-size: 15.5px;
+  font-weight: 900;
+  color: #0369a1;
+}
+
+.allotment-subtext {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #075985;
+  margin-top: 2px;
+}
+
+.allotment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-allotment-action {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 9px 18px;
+  font-family: var(--font-family, 'Nunito', sans-serif);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-allotment-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(2, 132, 199, 0.35);
+}
+
+.btn-allotment-dismiss {
+  background: #ffffff;
+  color: #64748b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9999px;
+  padding: 8px 14px;
+  font-family: var(--font-family, 'Nunito', sans-serif);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-allotment-dismiss:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Therapist Daily Progress Notification Card */
+.therapist-progress-notification-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 2.5px solid #d8b4fe;
+  border-radius: 20px;
+  padding: 16px 22px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.1);
+}
+
+.therapist-report-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.therapist-report-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.3);
+  flex-shrink: 0;
+}
+
+.therapist-report-headline {
+  font-size: 15px;
+  font-weight: 900;
+  color: #6b21a8;
+}
+
+.therapist-report-details {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #7e22ce;
+  margin-top: 2px;
+}
+
+.btn-therapist-view-report {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 9px 18px;
+  font-family: var(--font-family, 'Nunito', sans-serif);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-therapist-view-report:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.35);
+}
+
+/* =========================================================
+   PAGE 1: SCHEDULE & 5-FAILURE STRUGGLE ALERT DRAWER
+   ========================================================= */
+
+/* Urgent Struggle Alert Notification Drawer (5-Failure Rule) */
+.struggle-alert-drawer {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+  border: 3px solid #fecdd3;
+  border-radius: 24px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 6px 0 #fda4af;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: pop-in 0.3s ease-out;
+}
+
+.alert-drawer-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.alert-icon-beacon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: var(--duo-coral);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 4px 0 var(--duo-coral-dark);
+  animation: gentle-wobble 2.5s infinite;
+}
+
+.alert-details h3 {
+  font-size: 18px;
+  font-weight: 900;
+  color: #9f1239;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert-details p {
+  font-size: 14px;
+  color: #be123c;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.alert-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Filters & Search Toolbar */
+.clinical-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 260px;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 12px 18px 12px 42px;
+  border-radius: 16px;
+  border: 2px solid var(--border-card);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  outline: none;
+  background: white;
+}
+.search-input-wrapper input:focus {
+  border-color: var(--duo-blue);
+}
+
+.search-icon-prefix {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+/* Time-Slot Grid Layout */
+.schedule-grid-section {
+  background: white;
+  border: 2px solid var(--border-card);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 6px 0 var(--border-card);
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-title-row h3 {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+.time-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.time-slot-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-radius: 20px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  transition: all 0.15s;
+}
+
+.time-slot-card:hover {
+  background: white;
+  border-color: var(--duo-blue);
+  box-shadow: 0 4px 12px rgba(28, 176, 246, 0.1);
+}
+
+.slot-time-col {
+  min-width: 110px;
+}
+
+.slot-time-text {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+.slot-duration {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.slot-patient-col {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.patient-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border: 2px solid #bae6fd;
+}
+
+.patient-info h4 {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+.patient-info p {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.slot-status-col {
+  margin: 0 20px;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.status-badge.in-progress {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.status-badge.upcoming {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+
+.status-badge.struggling {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  animation: pulse-alert 1.8s infinite;
+}
+
+/* =========================================================
+   PAGE 2: LIVE ARTICULATION STUDIO
+   Phoneme Classification Palette & Clinical Anatomy Controls
+   ========================================================= */
+
+.studio-grid-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Left: Phoneme Classification Palette */
+.phoneme-palette-card {
+  background: white;
+  border: 2px solid var(--border-card);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 6px 0 var(--border-card);
+}
+
+.palette-group {
+  margin-bottom: 18px;
+}
+
+.palette-group-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.palette-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.palette-phoneme-btn {
+  aspect-ratio: 1;
+  border: 2px solid var(--border-card);
+  border-radius: 12px;
+  background: #f8fafc;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--text-main);
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--border-card);
+  transition: all 0.1s;
+}
+
+.palette-phoneme-btn:hover {
+  border-color: var(--duo-blue);
+  transform: translateY(-2px);
+}
+
+.palette-phoneme-btn.active {
+  background: var(--duo-blue);
+  color: white;
+  border-color: var(--duo-blue-dark);
+  box-shadow: 0 3px 0 var(--duo-blue-dark);
+}
+
+/* Right: Clinical 3D Studio & Anatomical Controls */
+.clinical-studio-stage {
+  background: white;
+  border: 2px solid var(--border-card);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 6px 0 var(--border-card);
+}
+
+.studio-3d-box {
+  width: 100%;
+  height: 380px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #090d16;
+  position: relative;
+  border: 2px solid #1e293b;
+}
+
+.studio-controls-panel {
+  margin-top: 24px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.slider-field label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.slider-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--duo-blue);
+}
+
+.clinical-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid #e2e8f0;
+  padding-top: 18px;
+}
+
+@media (max-width: 900px) {
+  .studio-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}

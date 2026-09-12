@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Articulation Training System | Inside Out 3D Speech Therapy</title>
+  <meta name="description" content="AI-assisted articulation speech therapy platform with Inside Out emotion theme, customizable pet mascots, 3D & 2D articulatory video slots, and multi-portal workflows.">
+
+  <!-- Google Fonts: Nunito & Quicksand for playful typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/duolingo-theme.css?v=6">
+  <link rel="stylesheet" href="css/hero-landing.css?v=6">
+  <link rel="stylesheet" href="css/student-portal.css?v=6">
+  <link rel="stylesheet" href="css/therapist-portal.css?v=6">
+  <link rel="stylesheet" href="css/parent-portal.css?v=6">
+  <link rel="stylesheet" href="css/settings-panel.css?v=6">
+
+  <!-- Three.js CDN for 3D Anatomical Articulatory Visualization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Fun Floating Ambient Background Accents (Fixed in background) -->
+  <div class="ambient-bg-decorations" aria-hidden="true">
+    <!-- Floating 3D Emotion Memory Orbs -->
+    <div class="bg-orb joy-orb" style="top: 10%; left: 3%;"></div>
+    <div class="bg-orb sadness-orb" style="top: 26%; right: 4%;"></div>
+    <div class="bg-orb disgust-orb" style="top: 50%; left: 4%;"></div>
+    <div class="bg-orb anger-orb" style="top: 70%; right: 3%;"></div>
+    <div class="bg-orb fear-orb" style="top: 85%; left: 5%;"></div>
+    <div class="bg-orb anxiety-orb" style="top: 36%; right: 3%;"></div>
+
+    <!-- Drifting Cartoon Clouds -->
+    <div class="bg-cloud cloud-1">☁️</div>
+    <div class="bg-cloud cloud-2">☁️</div>
+    <div class="bg-cloud cloud-3">⛅</div>
+    <div class="bg-cloud cloud-4">☁️</div>
+
+    <!-- Playful Floating Stickers -->
+    <div class="bg-sticker s1">✨</div>
+    <div class="bg-sticker s2">🌟</div>
+    <div class="bg-sticker s3">🎵</div>
+    <div class="bg-sticker s4">💬</div>
+    <div class="bg-sticker s5">🎈</div>
+    <div class="bg-sticker s6">💫</div>
+    <div class="bg-sticker s7">🐾</div>
+    <div class="bg-sticker s8">🎶</div>
+    <div class="bg-sticker s9">🌈</div>
+    <div class="bg-sticker s10">⭐</div>
+  </div>
+
+  <!-- =========================================================
+       INSIDE OUT HEADER & MEMORY ORBS GAMIFICATION HUD
+       ========================================================= -->
+  <header class="duo-header" id="app-header">
+    <div class="brand-area" onclick="if(!window.appState.isLoggedIn) window.appState.switchRole('hero');" title="Speech Therapy Platform">
+      <div class="brand-logo-orbs">
+        <span class="mini-orb joy" title="Joy"></span>
+        <span class="mini-orb sadness" title="Sadness"></span>
+        <span class="mini-orb disgust" title="Disgust"></span>
+        <span class="mini-orb anger" title="Anger"></span>
+        <span class="mini-orb fear" title="Fear"></span>
+        <span class="mini-orb anxiety" title="Anxiety"></span>
+      </div>
+      <div class="brand-title">
+        MEMORY ORB 3D
+        <span class="sub">Speech Articulation Platform</span>
+      </div>
+    </div>
+
+    <!-- Active Session Header Area (Only visible when user logs into a portal) -->
+    <div class="header-session-area" id="header-session-area" style="display: none;">
+      <!-- Student Gamification HUD -->
+      <div class="gamification-hud" id="student-hud" style="display: none;">
+        <div class="stat-chip points" id="stat-points" title="Memory Orbs / Points Earned" onclick="document.getElementById('btn-open-boutique')?.click();">
+          <span>🔮</span>
+          <span>140 🔮</span>
+        </div>
+        <div class="stat-chip pet-btn" id="stat-pet-btn" title="Dress Up Pet Companion" onclick="document.getElementById('btn-open-boutique')?.click();">
+          <span>🐾</span>
+          <span>Pet Boutique</span>
+        </div>
+        <div class="stat-chip streak" title="Daily Practice Streak">
+          <span>🔥</span>
+          <span id="stat-streak">12</span>
+        </div>
+        <div class="stat-chip hearts" title="Energy Hearts">
+          <span>❤️</span>
+          <span id="stat-hearts">5</span>
+        </div>
+        <div class="stat-chip crowns" title="Sound Mastery Crown Level">
+          <span>👑</span>
+          <span id="stat-crowns">14</span>
+        </div>
+      </div>
+
+      <!-- Therapist Clinical HUD -->
+      <div class="therapist-hud" id="therapist-hud" style="display: none;">
+        <div class="stat-chip" style="background:#e0f2fe; color:#0369a1; border: 2px solid #bae6fd;">
+          <span>🩺</span>
+          <span>Dr. Ritu Nair (SLP)</span>
+        </div>
+        <div class="stat-chip" style="background:#fee2e2; color:#dc2626; border: 2px solid #fca5a5;">
+          <span>🚨</span>
+          <span id="therapist-alert-badge">1 Patient Alert</span>
+        </div>
+        <div class="stat-chip" id="therapist-allotment-hud-chip" style="background:#fef3c7; color:#b45309; border: 2px solid #fde68a; cursor:pointer;" onclick="document.getElementById('therapist-allotment-banner')?.scrollIntoView({behavior:'smooth'});" title="New Patient Allotment">
+          <span>🎓</span>
+          <span id="therapist-allotment-count">1 New Student Allotted</span>
+        </div>
+        <div class="stat-chip" id="therapist-report-hud-chip" style="background:#ede9fe; color:#6d28d9; border: 2px solid #ddd6fe; cursor:pointer;" onclick="window.settingsController?.openSettings('report');" title="Daily Progress Report">
+          <span>📊</span>
+          <span>Daily Reports Ready</span>
+        </div>
+      </div>
+
+      <!-- Parent HUD -->
+      <div class="parent-hud" id="parent-hud" style="display: none;">
+        <div class="stat-chip" style="background:#dcfce7; color:#15803d; border: 2px solid #bbf7d0;">
+          <span>👨‍👩‍👦</span>
+          <span id="parent-hud-learner-label">Aarav's Caregiver Hub</span>
+        </div>
+        <div class="stat-chip streak">
+          <span>🔥</span>
+          <span id="parent-hud-streak">12 Day Streak</span>
+        </div>
+        <div class="stat-chip" id="parent-report-hud-chip" style="background:#fef3c7; color:#b45309; border: 2px solid #fde68a; cursor:pointer;" onclick="window.settingsController?.openSettings('report');" title="Daily Progress Report Available">
+          <span>📊</span>
+          <span>New Daily Report</span>
+        </div>
+      </div>
+
+      <!-- Session Logout Button -->
+      <div class="session-account-controls" style="display: flex; align-items: center; gap: 8px;">
+        <!-- Settings & Report Header Trigger -->
+        <button type="button" class="btn-header-settings" id="btn-header-settings" title="Settings, Avatar & Everyday Progress Report">
+          <span id="header-user-avatar-badge">👦</span>
+          <span>⚙️ Settings & Report</span>
+        </button>
+        <button class="btn-logout" id="btn-header-logout" title="Log out and return to Login Screen" onclick="window.appState.logout();">
+          <span>🚪</span>
+          <span>Log Out</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================
+       HERO / WELCOME LOGIN PAGE
+       ========================================================= -->
+  <section id="hero-portal-view" class="portal-view hero-portal-view active">
+    <!-- Ambient Floating Emotion Orbs -->
+    <div class="hero-ambient-orbs">
+      <div class="ambient-orb joy-orb"></div>
+      <div class="ambient-orb sadness-orb"></div>
+      <div class="ambient-orb disgust-orb"></div>
+      <div class="ambient-orb anger-orb"></div>
+    </div>
+
+    <div class="hero-content-wrapper">
+      
+      <div class="hero-title-area">
+        <h1 class="hero-main-title">
+          Learn to <span class="gradient-text">Master Your Pace</span>
+        </h1>
+        <p class="hero-subtitle">
+          Personalized 3D speech articulation training tailored to every learner, clinician, and family. Select who is logging in today to begin.
+        </p>
+      </div>
+
+      <!-- Central Interactive Login & Role Card -->
+      <div class="hero-login-card student-mode" id="hero-login-card">
+        
+        <div class="hero-card-header">
+          <div class="hero-card-header-left">
+            <div class="hero-step-badge">👤</div>
+            <div>
+              <h3 class="hero-card-title">Select Your Profile to Log In</h3>
+              <p class="hero-card-subtitle">Choose your portal below to enter your dedicated session</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Options Cards Grid -->
+        <div class="role-cards-grid">
+          <!-- Student Card -->
+          <div class="role-character-card active" data-role="student">
+            <div class="role-card-check">✓</div>
+            <div class="role-card-avatar">🧒</div>
+            <h4 class="role-card-title">Student Explorer</h4>
+            <span class="role-card-tag">Joy's Memory Trail 🔮</span>
+            <p class="role-card-desc">Interactive phoneme practice, slow-motion audio cadence, 3D tongue visualizer & pet boutique.</p>
+          </div>
+
+          <!-- Therapist Card -->
+          <div class="role-character-card" data-role="therapist">
+            <div class="role-card-check">✓</div>
+            <div class="role-card-avatar">🩺</div>
+            <h4 class="role-card-title">Clinician / SLP</h4>
+            <span class="role-card-tag" style="color: #0284c7;">5-Failure Live Alert 🚨</span>
+            <p class="role-card-desc">Clinical telepractice cockpit, real-time struggle alerts, anatomical plane inspection & video module unlocks.</p>
+          </div>
+
+          <!-- Parent Card -->
+          <div class="role-character-card" data-role="parent">
+            <div class="role-card-check">✓</div>
+            <div class="role-card-avatar">👨‍👩‍👦</div>
+            <h4 class="role-card-title">Parent / Caregiver</h4>
+            <span class="role-card-tag" style="color: #10b981;">Adherence Heatmap 📅</span>
+            <p class="role-card-desc">Daily practice adherence heatmaps, sound mastery progress curves, and therapist clinical notes feed.</p>
+          </div>
+        </div>
+
+        <!-- Action Row: Continue to Authentication -->
+        <div class="hero-action-row">
+          <button class="btn-launch-portal" id="btn-launch-hero-portal" type="button">
+            <span>🚀</span>
+            <span>Continue to Sign In as Student Explorer →</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Stage 2: Role Authentication Card (Sign In & Register) -->
+      <div class="hero-auth-card student-mode" id="hero-auth-card" style="display: none;">
+        
+        <!-- Auth Header with Back Button and Current Role Pill -->
+        <div class="auth-header-bar">
+          <button type="button" class="btn-back-to-roles" id="btn-back-to-roles">
+            <span>←</span>
+            <span>Choose Different Profile</span>
+          </button>
+          <div class="auth-role-pill" id="auth-role-pill">
+            <span id="auth-role-icon">🧒</span>
+            <span id="auth-role-name">Student Explorer</span>
+          </div>
+        </div>
+
+        <!-- Auth Mode Tabs (Sign In vs Register - REGISTER HIDDEN FOR THERAPISTS) -->
+        <div class="auth-tabs-row" id="auth-tabs-row">
+          <button type="button" class="auth-tab-btn active" id="tab-auth-signin" data-mode="signin">
+            <span>🔑</span>
+            <span>Sign In</span>
+          </button>
+          <button type="button" class="auth-tab-btn" id="tab-auth-register" data-mode="register">
+            <span>📝</span>
+            <span>Create Account / Register</span>
+          </button>
+        </div>
+
+        <!-- Therapist Institutional Notice (Only visible for Therapist) -->
+        <div class="auth-notice-box" id="therapist-security-notice" style="display: none;">
+          <div style="font-size: 26px;">🔒</div>
+          <div>
+            <div style="font-weight: 900; font-size: 14px; color: #0369a1;">Clinical SLP Institutional Gateway</div>
+            <div style="font-size: 12px; font-weight: 700; color: #0284c7; line-height: 1.4; margin-top: 2px;">
+              Speech Clinician & SLP accounts are provisioned exclusively through authorized hospital or clinic networks. Public registration is restricted.
+            </div>
+          </div>
+        </div>
+
+        <!-- FORM 1: SIGN IN (Student, Therapist, Parent) -->
+        <form id="form-auth-signin" class="auth-form-body" onsubmit="return false;">
+          <div class="auth-input-group">
+            <label class="auth-input-label" id="signin-identifier-label">Learner Username or Email</label>
+            <input type="text" class="auth-input-field" id="signin-identifier" placeholder="aarav@speech.edu" required autocomplete="username">
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label">Password / PIN</label>
+            <input type="password" class="auth-input-field" id="signin-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btn-submit-signin">
+            <span>🚀</span>
+            <span id="btn-submit-signin-label">Sign In to Student Studio →</span>
+          </button>
+        </form>
+
+        <!-- FORM 2: REGISTER (Student & Parent ONLY - NOT FOR THERAPIST) -->
+        <form id="form-auth-register" class="auth-form-body" style="display: none;" onsubmit="return false;">
+          <div class="auth-input-group">
+            <label class="auth-input-label" id="register-name-label">Learner Full Name</label>
+            <input type="text" class="auth-input-field" id="register-name" placeholder="e.g. Aarav Sharma" required>
+          </div>
+
+          <div class="auth-input-group" id="register-extra-group">
+            <label class="auth-input-label" id="register-extra-label">Learner Age</label>
+            <input type="text" class="auth-input-field" id="register-extra" placeholder="e.g. 6 years old">
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" id="register-email-label">Guardian Contact Email</label>
+            <input type="email" class="auth-input-field" id="register-email" placeholder="parent@family.com" required>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label">Create Password</label>
+            <input type="password" class="auth-input-field" id="register-password" placeholder="Create a secure password" required>
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btn-submit-register">
+            <span>✨</span>
+            <span id="btn-submit-register-label">Create Student Account & Start Quest →</span>
+          </button>
+        </form>
+
+      </div>
+
+      <!-- Feature Badges Showcase Ribbon -->
+      <div class="hero-features-ribbon">
+        <div class="hero-feature-pill">
+          <span>🔮</span>
+          <span>6 Emotion Memory Trails</span>
+        </div>
+        <div class="hero-feature-pill">
+          <span>👅</span>
+          <span>3D Anatomical Tongue Engine</span>
+        </div>
+        <div class="hero-feature-pill">
+          <span>🐾</span>
+          <span>Customizable Pet Companions</span>
+        </div>
+        <div class="hero-feature-pill">
+          <span>🚨</span>
+          <span>5-Failure Clinical Alerts</span>
+        </div>
+        <div class="hero-feature-pill">
+          <span>📊</span>
+          <span>Interactive Progress Heatmaps</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================
+       PORTAL 1: STUDENT PORTAL (INSIDE OUT PATH & PET COMPANION)
+       ========================================================= -->
+  <main id="student-portal-view" class="portal-view">
+    <div class="student-container">
+
+      <!-- SUBVIEW A: MEMORY ORB TRAIL MAP & PET COMPANION -->
+      <section id="student-map-subview" class="student-subview active">
+        <!-- Inside Out Unit Banner -->
+        <div class="unit-banner">
+          <div class="unit-info">
+            <h2>✨ Unit 1: Joy's Core Speech Headquarters</h2>
+            <p>Master tongue, lip, and jaw placement to build glowing speech memory orbs!</p>
+          </div>
+          <div class="unit-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div class="student-id-pill" id="student-header-id-pill" title="Share this ID with your parent or caregiver to link your account">
+              <span>🆔 Speech ID:</span>
+              <strong id="student-display-id">ORB-4819</strong>
+            </div>
+            <button class="btn-duo btn-joy" onclick="window.studentController.openPracticeRoom(getPhonemeById('swar_a'))">
+              🎯 Practice Target 'अ' (A)
+            </button>
+          </div>
+        </div>
+
+        <!-- Phonetics Category Filter Bar -->
+        <div class="category-filter-bar">
+          <button class="category-pill active" data-category="all">🌟 All Letters (अ to श्र • 50 Sounds)</button>
+          <button class="category-pill" data-category="swar">🌈 Swar / Vowels (अ to अः • 13 Vowels)</button>
+          <button class="category-pill" data-category="sparsh">🎯 Sparsh / Stops (क-म 25 Letters)</button>
+          <button class="category-pill" data-category="anthastha">🌊 Anthastha / Approximants (य, र, ल, व)</button>
+          <button class="category-pill" data-category="ushma">💨 Ushma & Glottal (श, ष, स, ह)</button>
+          <button class="category-pill" data-category="blends">🔀 Blends / संयुक्ताक्षर (क्ष, त्र, ज्ञ, श्र)</button>
+        </div>
+
+        <!-- Winding Path & Cute Pet Mascot Layout -->
+        <div class="path-and-mascot-wrapper">
+          <!-- Left Balanced Guide / Quick Consonant Navigator -->
+          <div class="path-guide-column">
+            <div class="quick-jump-card">
+              <div class="quick-jump-title">
+                <span>🗺️</span>
+                <span>Varnamala Lane</span>
+              </div>
+              <p style="font-size: 11px; font-weight: 700; color: #78350f; margin: 0;">
+                All 50 Hindi vowels & consonants in proper articulatory progression:
+              </p>
+              <div class="quick-jump-list">
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('all')">🌟 All 50 Sounds</button>
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('swar')">🌈 Swar (अ to अः 13 Vowels)</button>
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('sparsh')">🎯 Sparsh (क to म)</button>
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('anthastha')">🌊 Anthastha (य to व)</button>
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('ushma')">💨 Ushma & Ha (श to ह)</button>
+                <button type="button" class="quick-jump-chip" onclick="window.studentController.filterAndScroll('blends')">🔀 Blends (क्ष to श्र)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stepping Stone Emotion Orbs Column (Dead Center!) -->
+          <div class="duo-path-column" id="duo-path-column">
+            <!-- Dynamically populated with Inside Out emotion orbs -->
+          </div>
+
+          <!-- Cute Pet Mascot Column (Cat, Bunny, Pup) -->
+          <div class="pet-companion-column">
+            <div class="pet-speech-bubble" id="pet-speech-bubble">
+              <span id="pet-speech-text">Hi! I'm Mimi the Cat! Let's practice sounds and earn memory gems!</span>
+            </div>
+
+            <!-- Pet Interactive SVG Avatar -->
+            <div class="pet-avatar-wrapper" id="pet-avatar-wrapper" title="Click your pet for cheering!">
+              <!-- Dynamically populated with Cat, Rabbit, or Pup + Accessories -->
+            </div>
+
+            <!-- Pet Customizer & Dress-Up Controls -->
+            <div class="pet-customizer-controls">
+              <div style="font-size: 13px; font-weight: 900; color: #78350f;">
+                Pet Buddy: <span id="current-pet-name-label" style="color: #c2410c;">Mimi the Cat</span>
+              </div>
+              <div class="pet-choice-row">
+                <button class="pet-choice-btn active" data-pet="cat">🐱 Kitty</button>
+                <button class="pet-choice-btn" data-pet="rabbit">🐰 Bunny</button>
+                <button class="pet-choice-btn" data-pet="pup">🐶 Puppy</button>
+              </div>
+              <button class="btn-pet-boutique" id="btn-open-boutique">
+                <span>🛍️</span>
+                <span>Pet Boutique (Dress Up!)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phoneme Exploration Hub Matrix Grid -->
+        <section class="tile-matrix-section">
+          <div class="matrix-header">
+            <h3><span>🗂️</span> Phoneme Exploration Hub & 3D/2D Video Badges</h3>
+            <span style="font-size: 13px; font-weight: 800; color: #0284c7;">Hover or tap to hear slow audio preview!</span>
+          </div>
+          <div class="tile-grid" id="tile-grid-container">
+            <!-- Dynamically populated cards -->
+          </div>
+        </section>
+      </section>
+
+      <!-- SUBVIEW B: INTERACTIVE PRACTICE ROOM (Hierarchy & Dedicated 3D/2D Video Slot) -->
+      <section id="student-practice-subview" class="student-subview">
+        <div class="practice-header-bar">
+          <button class="back-to-map-btn" id="back-to-map-btn">
+            <span>←</span> Back to Emotion Trail
+          </button>
+          <div class="sound-mode-title" style="font-weight: 900; font-size: 16px; color: #431407;">
+            Practice Stage: <span id="current-practice-title" style="color:#ea580c;">Ka (क)</span>
+          </div>
+        </div>
+
+        <!-- Therapy Hierarchy Tabs (Level 1 -> Level 2 -> Level 3 with Point Rewards) -->
+        <div class="therapy-hierarchy-tabs" role="tablist">
+          <button class="hierarchy-tab-btn active" data-level="sound">
+            <span class="tab-step-badge">Level 1</span>
+            <span>🔊 Sound Level (+20 🔮)</span>
+          </button>
+          <button class="hierarchy-tab-btn" data-level="word">
+            <span class="tab-step-badge">Level 2</span>
+            <span>📦 Word Level (+35 🔮)</span>
+          </button>
+          <button class="hierarchy-tab-btn" data-level="sentence">
+            <span class="tab-step-badge">Level 3</span>
+            <span>💬 Sentence Level (+50 🔮)</span>
+          </button>
+        </div>
+
+        <!-- 2-Column Practice Stage -->
+        <div class="practice-stage-grid">
+          <!-- Left Column: Attempt Tracker, Target Association, Cadence & Mic -->
+          <div class="practice-main-card">
+            
+            <!-- Consecutive Attempt Counter & 5-Failure Struggle Tracker -->
+            <div class="attempt-tracker-banner">
+              <div class="attempt-title">
+                <span>🔄</span>
+                <span id="attempt-count-text">Attempt 0 / 5</span>
+              </div>
+              <div class="attempt-dots" id="attempt-dots">
+                <div class="attempt-dot"></div>
+                <div class="attempt-dot"></div>
+                <div class="attempt-dot"></div>
+                <div class="attempt-dot"></div>
+                <div class="attempt-dot"></div>
+              </div>
+            </div>
+
+            <!-- Automated Struggle Alert Banner (5-Failure Rule) -->
+            <div class="struggle-alert-box" id="struggle-alert-box">
+              <div style="font-size: 36px;">🩺</div>
+              <div>
+                <h4 style="font-size: 16px; font-weight: 900; color: #c2410c;">Therapist Alerted (5-Failure Rule)</h4>
+                <p style="font-size: 13px; font-weight: 700; color: #9a3412;">
+                  Gentle alert sent to Dr. Ritu! She is reviewing your tongue placement to unlock a personalized 3D/2D video guide.
+                </p>
+              </div>
+            </div>
+
+            <!-- Prominent Letter & Object Pairing -->
+            <div class="target-display-hero">
+              <div class="target-hero-letter" id="target-hero-letter">क</div>
+              <div class="target-hero-object">
+                <span class="target-hero-emoji" id="target-hero-emoji">🕊️</span>
+                <span class="target-hero-word" id="target-hero-word">कबूतर</span>
+                <span class="target-hero-translit" id="target-hero-translit">(Kabootar - "Pigeon")</span>
+              </div>
+              <!-- Sentence Level Hero Box -->
+              <div class="sentence-hero-box" id="sentence-hero-box">
+                <div class="sentence-hero-text" id="sentence-hero-text">कबूतर दाना चुगता है।</div>
+                <div class="sentence-hero-meaning" id="sentence-hero-meaning">"The pigeon is pecking at grains."</div>
+              </div>
+            </div>
+
+            <!-- Slow-Paced Cadence Audio Engine Bar -->
+            <div class="cadence-control-card">
+              <div class="cadence-header">
+                <h4><span>⏱️</span> Slow-Motion Cadence Controller</h4>
+                <div class="cadence-speed-selector">
+                  <button class="speed-chip active" data-speed="0.65">0.6x (Slow)</button>
+                  <button class="speed-chip" data-speed="0.85">0.8x</button>
+                  <button class="speed-chip" data-speed="1.0">1.0x (Normal)</button>
+                </div>
+              </div>
+
+              <div class="syllable-cadence-pills" id="syllable-cadence-pills">
+                <!-- Highlighted syllable pills -->
+              </div>
+
+              <div class="audio-action-row">
+                <button class="btn-duo btn-blue" id="btn-play-cadence">
+                  🔊 Listen Target Sound
+                </button>
+                <button class="btn-duo btn-joy" id="btn-play-syllables">
+                  🎵 Syllable Rhythm
+                </button>
+              </div>
+            </div>
+
+            <!-- Speech Recording & Evaluation Station -->
+            <div class="speech-recording-station">
+              <div class="mic-button-wrapper">
+                <button class="btn-duo-mic" id="btn-duo-mic" title="Click to speak and get instant feedback!">
+                  🎤
+                </button>
+              </div>
+              <p style="font-size: 13px; font-weight: 800; color: #78350f;">
+                Tap microphone, speak target clearly, and earn Memory Orbs!
+              </p>
+
+              <!-- Real-Time Pronunciation Feedback Card -->
+              <div class="feedback-result-card" id="feedback-result-card">
+                <div class="feedback-score-row">
+                  <span class="feedback-score-badge" id="feedback-score-badge">🎯 Accuracy: 94% (+20 🔮)</span>
+                  <span style="font-size: 22px;">🏆</span>
+                </div>
+                <div class="feedback-message" id="feedback-message">Great articulation!</div>
+                <div class="feedback-pediatric-tip" id="feedback-pediatric-tip">Tip info</div>
+                <button type="button" class="btn-duo btn-joy" id="btn-advance-next-sound" style="margin-top: 12px; width: 100%; font-size: 13px; display: none;" onclick="window.studentController.completeAndReturnToTrail();">
+                  🌟 Sound Mastered! See Next Glowing Sound on Trail →
+                </button>
+              </div>
+
+              <!-- Testing Simulation Toolbar -->
+              <div class="simulation-toolbar">
+                <span>🧪 Testing Controls:</span>
+                <button class="btn-duo btn-green btn-sm" id="btn-test-success" style="padding: 7px 14px; font-size: 12px;">
+                  🌟 Simulate Pass (Earn 🔮)
+                </button>
+                <button class="btn-duo btn-coral btn-sm" id="btn-test-struggle" style="padding: 7px 14px; font-size: 12px;">
+                  ⚠️ Simulate Struggle (Test 5-Failure)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: DEDICATED 3D & 2D ARTICULATION VIDEO SHOWCASE SLOT -->
+          <div class="articulatory-video-slot-card">
+            <div class="video-slot-header">
+              <h3><span>🎬</span> 3D & 2D Articulation Video Slot</h3>
+              <span class="badge-3d-status" id="badge-video-status">🎬 Dedicated Video Slot</span>
+            </div>
+
+            <!-- 3D vs 2D Video Selector Tabs -->
+            <div class="video-dimension-tabs">
+              <button class="dimension-tab-btn active" id="btn-slot-3d">
+                <span>🎥</span> 3D Anatomical Video
+              </button>
+              <button class="dimension-tab-btn" id="btn-slot-2d">
+                <span>🎞️</span> 2D Sagittal Video
+              </button>
+            </div>
+
+            <!-- Video Player Frame with Video Element & Fallback Showcase Poster -->
+            <div class="video-player-frame">
+              <div class="video-element-wrapper">
+                <video id="embedded-custom-video" class="embedded-custom-video" controls loop playsinline></video>
+                <div class="video-poster-stage" id="video-poster-stage">
+                  <div class="slot-film-icon" id="slot-film-icon">🎬</div>
+                  <div class="slot-main-prompt" id="slot-main-prompt">
+                    3D Articulation Demonstration for 'क'
+                  </div>
+                  <div class="slot-sub-prompt" id="slot-sub-prompt">
+                    Space reserved for your own 3D & 2D clinical videos. Click 'Upload Custom Video' below to preview your .mp4 file.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Playback & Cadence Controls Strip -->
+            <div class="video-controls-strip">
+              <div class="playback-buttons">
+                <button class="btn-video-control" id="btn-video-speed-toggle">
+                  ⚡ 1.0x Speed
+                </button>
+                <button class="btn-video-control active" id="btn-video-loop-toggle">
+                  🔁 Loop: On
+                </button>
+              </div>
+              <div style="font-size: 11px; font-weight: 800; color: #38bdf8;" id="video-slot-dim-title">
+                3D Vocal Tract Video
+              </div>
+            </div>
+
+            <!-- Custom Video File Upload / Testing Option -->
+            <div class="custom-video-uploader-row">
+              <span>📁 Test with your own 3D/2D video file:</span>
+              <input type="file" id="custom-video-file-input" accept="video/mp4,video/webm,video/ogg">
+              <button class="btn-upload-trigger" id="btn-trigger-video-upload">
+                Select Video (.mp4 / .webm)
+              </button>
+            </div>
+
+            <!-- Pediatric Articulatory Cue Notes -->
+            <div class="video-pediatric-notes">
+              <h5 id="guidance-sound-name">Velar Stop: /k/ (कण्ठ्य)</h5>
+              <p id="guidance-placement-text">Back of tongue elevates to touch soft palate. Build gentle oral air pressure, then release.</p>
+              <p id="guidance-airflow-text" style="color: #38bdf8; font-size: 12px; margin-top: 4px;">Airflow: Oral explosion burst, velic port closed.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- =========================================================
+       PET BOUTIQUE & DRESS-UP ACCESSORIES MODAL
+       ========================================================= -->
+  <div class="boutique-modal-backdrop" id="boutique-modal-backdrop">
+    <div class="boutique-modal-card">
+      <div class="boutique-modal-header">
+        <h3><span>🛍️</span> Pet Boutique & Dress-Up Closet</h3>
+        <button class="modal-close-btn" id="btn-close-boutique" title="Close">✕</button>
+      </div>
+
+      <div class="boutique-preview-section">
+        <div class="boutique-pet-preview" id="boutique-pet-preview-box">
+          <!-- Dynamic SVG of pet with accessory -->
+        </div>
+        <div class="boutique-pet-details">
+          <h4>Your Pet Dressing Room</h4>
+          <p>Complete speech levels to earn more Memory Orbs 🔮!</p>
+          <div style="margin-top: 8px; font-size: 15px; font-weight: 900; color: #166534;">
+            Available Balance: <span id="boutique-points-display">140 🔮</span>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-size: 15px; font-weight: 900; color: #78350f; margin-bottom: 8px;">
+        Choose an Accessory to Equip or Buy:
+      </h4>
+      <div class="accessories-catalog-grid" id="boutique-catalog-grid">
+        <!-- Dynamically rendered accessories cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PORTAL 2: THERAPIST PORTAL (SCHEDULE & LIVE 3D STUDIO)
+       ========================================================= -->
+  <main id="therapist-portal-view" class="portal-view">
+    <div class="therapist-container">
+
+      <!-- Therapist Subnav -->
+      <div class="therapist-subnav">
+        <div class="therapist-subnav-links">
+          <button class="subnav-tab active" data-view="schedule">
+            <span>📅</span> Schedule & Struggle Alerts
+          </button>
+          <button class="subnav-tab" data-view="studio">
+            <span>🔬</span> Live Articulation Studio
+          </button>
+        </div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--sadness-blue-dark);">
+          Speech Language Pathologist: <strong>Dr. Ritu Nair (SLP)</strong>
+        </div>
+      </div>
+
+      <!-- THERAPIST PAGE 1: SCHEDULE & 5-FAILURE STRUGGLE DRAWER -->
+      <div id="therapist-schedule-subview">
+
+        <!-- New Patient Allotment Notification Banner -->
+        <div class="therapist-allotment-banner" id="therapist-allotment-banner" style="display: none;"></div>
+
+        <!-- Daily Speech Progress Report Alert Card -->
+        <div class="therapist-progress-notification-card" id="therapist-progress-notification-card" style="display: none;"></div>
+        
+        <!-- Automated Struggle Alert Drawer (5-Failure Rule) -->
+        <div class="struggle-alert-drawer" id="struggle-alert-drawer">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Clinical Search Toolbar -->
+        <div class="clinical-toolbar">
+          <div class="search-input-wrapper">
+            <span class="search-icon-prefix">🔍</span>
+            <input type="text" id="therapist-search-input" placeholder="Search student name, target phoneme (e.g., 'क', 'ट'), or status...">
+          </div>
+          <button class="btn-duo btn-blue" onclick="window.therapistController.startLiveSession('Aarav Sharma', 'ka')">
+            ➕ Launch Clinical Session
+          </button>
+        </div>
+
+        <!-- Time-Slot Grid View -->
+        <section class="schedule-grid-section">
+          <div class="section-title-row">
+            <h3>Today's Clinical Appointments</h3>
+            <span style="font-size: 13px; font-weight: 800; color: var(--text-muted);">4 Appointments Scheduled</span>
+          </div>
+          <div class="time-slot-list" id="therapist-roster-list">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+      </div>
+
+      <!-- THERAPIST PAGE 2: LIVE ARTICULATION STUDIO -->
+      <div id="therapist-studio-subview" style="display: none;">
+        <div class="studio-grid-layout">
+          
+          <div class="phoneme-palette-card">
+            <h3 style="font-size: 18px; font-weight: 900; margin-bottom: 16px;">
+              <span>🔤</span> Hindi & English Phoneme Palette
+            </h3>
+            <div id="therapist-phoneme-palette">
+              <!-- Categorized by Sparsh, Anthastha, Ushma -->
+            </div>
+          </div>
+
+          <div class="clinical-studio-stage">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div>
+                <h3 style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="studio-current-phoneme-title">
+                  क - Ka (/k/)
+                </h3>
+                <p style="font-size: 13px; font-weight: 700; color: #0284c7;" id="studio-pediatric-cue-text">
+                  Dragon cough! Tap back of tongue to soft palate.
+                </p>
+              </div>
+              <button class="btn-duo btn-coral" id="btn-push-to-student">
+                📡 Push 3D Video Module to Student
+              </button>
+            </div>
+
+            <!-- Studio 3D Canvas -->
+            <div class="studio-3d-box" id="webgl-therapist-studio"></div>
+
+            <!-- Sliders -->
+            <div class="studio-controls-panel">
+              <h4 style="font-size: 15px; font-weight: 900; margin-bottom: 14px; color: var(--text-main);">
+                🎛️ Clinical Kinematic & Airflow Controls
+              </h4>
+              <div class="sliders-grid">
+                <div class="slider-field">
+                  <label>Tongue Height: <span id="slider-tongue-height-val">0.85</span></label>
+                  <input type="range" id="slider-tongue-height" min="0.0" max="1.0" step="0.05" value="0.85">
+                </div>
+                <div class="slider-field">
+                  <label>Tongue Advancement: <span id="slider-tongue-adv-val">-0.65</span></label>
+                  <input type="range" id="slider-tongue-adv" min="-1.0" max="1.0" step="0.05" value="-0.65">
+                </div>
+                <div class="slider-field">
+                  <label>Tongue Tip Curl: <span id="slider-tongue-curl-val">0.00</span></label>
+                  <input type="range" id="slider-tongue-curl" min="0.0" max="1.0" step="0.05" value="0.0">
+                </div>
+                <div class="slider-field">
+                  <label>Lip Aperture: <span id="slider-lip-open-val">0.40</span></label>
+                  <input type="range" id="slider-lip-open" min="0.0" max="1.0" step="0.05" value="0.4">
+                </div>
+                <div class="slider-field">
+                  <label>Mandibular Jaw: <span id="slider-jaw-open-val">0.35</span></label>
+                  <input type="range" id="slider-jaw-open" min="0.0" max="1.0" step="0.05" value="0.35">
+                </div>
+                <div class="slider-field">
+                  <label>Airflow Velocity: <span id="slider-airflow-val">1.00</span></label>
+                  <input type="range" id="slider-airflow" min="0.2" max="2.5" step="0.1" value="1.0">
+                </div>
+              </div>
+
+              <div class="clinical-action-bar">
+                <div style="display: flex; gap: 20px; align-items: center;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; cursor: pointer;">
+                    <input type="checkbox" id="toggle-nasal-airflow">
+                    <span>Nasal Airflow (Velic Open)</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; cursor: pointer;">
+                    <input type="checkbox" id="toggle-voicing">
+                    <span>Vocal Fold Vibration</span>
+                  </label>
+                </div>
+                <button class="btn-duo btn-blue btn-sm" onclick="window.soundSFX.playCorrect();">
+                  💾 Save Articulation Preset
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- =========================================================
+       PORTAL 3: PARENT PORTAL (PROGRESS & HOME NOTES)
+       ========================================================= -->
+  <main id="parent-portal-view" class="portal-view">
+    <div class="parent-container">
+
+      <!-- Unlocked 3D Video Prompt Banner for Parents -->
+      <div class="parent-alert-banner" id="parent-alert-banner"></div>
+
+      <!-- Linked Children Hub & Multi-Child Switcher -->
+      <div class="linked-children-hub-card" id="linked-children-hub">
+        <div class="children-hub-header">
+          <div class="children-hub-title-group">
+            <div class="hub-icon">👨‍👩‍👧</div>
+            <div>
+              <div class="hub-title-row">
+                <h3 class="hub-title">My Linked Children</h3>
+                <span class="hub-count-badge" id="hub-children-count-badge">2 Learners</span>
+              </div>
+              <p class="hub-subtitle">Switch child profile to monitor individual speech appointments, phoneme milestones & daily reports</p>
+            </div>
+          </div>
+          <button type="button" class="btn-add-child-header" id="btn-add-child-acc" onclick="window.parentController.openAddChildModal()">
+            <span>➕</span>
+            <span>+ Add Child Acc</span>
+          </button>
+        </div>
+        <div class="children-cards-grid" id="parent-children-chips-list">
+          <!-- Populated dynamically with child cards and + Add Child Acc card -->
+        </div>
+      </div>
+
+      <!-- Parent Progress Notification Card -->
+      <div class="parent-progress-notification-card" id="parent-progress-notification-card" style="display: none;"></div>
+
+      <!-- Parent Overview Metric Cards -->
+      <div class="parent-overview-cards">
+        <div class="overview-card">
+          <div class="card-label">Learner Profile</div>
+          <div class="card-metric" style="font-size: 24px;" id="parent-child-name">Aarav Sharma</div>
+          <div class="card-subtext" id="parent-child-subtext">Age 6 • Pediatric Speech Retraining</div>
+          <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <span class="student-id-pill" id="parent-linked-code-label" style="font-size: 11px; padding: 3px 8px;">🆔 ID: ORB-4819</span>
+            <button type="button" class="btn-link-switch-child" id="btn-parent-switch-child" onclick="window.parentController.openLinkModal()">🔄 Switch Child</button>
+          </div>
+        </div>
+        <div class="overview-card">
+          <div class="card-label">Sounds Mastered</div>
+          <div class="card-metric" style="color: #15803d;" id="parent-sounds-mastered">13 / 18</div>
+          <div class="card-subtext" id="parent-sounds-subtext">↑ 3 sounds mastered this week</div>
+        </div>
+        <div class="overview-card">
+          <div class="card-label">Practice Streak</div>
+          <div class="card-metric" style="color: #ea580c;" id="parent-practice-streak">12 Days 🔥</div>
+          <div class="card-subtext" id="parent-streak-subtext">Consistent home practice</div>
+        </div>
+        <div class="overview-card">
+          <div class="card-label">Assigned Clinician</div>
+          <div class="card-metric" style="font-size: 22px; color: #0284c7;" id="parent-clinician-name">Dr. Ritu Nair</div>
+          <div class="card-subtext" id="parent-clinician-subtext">SLP • Next Session Today 09:30 AM</div>
+        </div>
+      </div>
+
+      <!-- Clinical Appointments & Telepractice Sessions -->
+      <section class="appointments-section" id="parent-appointments-section">
+        <div class="appointments-section-header">
+          <div>
+            <h3>📅 Telepractice Appointments & Clinician Check-Ins</h3>
+            <p>Direct scheduling and video appointment status with certified speech therapists</p>
+          </div>
+          <button class="btn-book-appt" onclick="window.parentController.bookAppointmentPrompt()">
+            ➕ Request Appointment
+          </button>
+        </div>
+        <div class="appointments-list-grid" id="parent-appointments-list">
+          <!-- Dynamic appointment cards populated by ParentViewController -->
+        </div>
+      </section>
+
+      <!-- Trajectory Progress -->
+      <section class="trajectory-section">
+        <h3>📊 Hindi Phoneme Mastery Trajectory</h3>
+        <div class="progress-group-list" id="parent-progress-group-list"></div>
+      </section>
+
+      <!-- Heatmap -->
+      <section class="heatmap-section">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>📅 Practice Frequency & Struggle Point Heatmap (Last 30 Days)</h3>
+          <div style="display: flex; gap: 12px; font-size: 11px; font-weight: 800;">
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width:10px; height:10px; background:#dcfce7; border-radius:3px;"></span> Light</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width:10px; height:10px; background:#22c55e; border-radius:3px;"></span> Great</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width:10px; height:10px; background:#fee2e2; border-radius:3px;"></span> 5-Failure Struggle</span>
+          </div>
+        </div>
+        <div class="heatmap-grid" id="parent-heatmap-grid"></div>
+      </section>
+
+      <!-- Notes Feed -->
+      <section class="notes-feed-section">
+        <h3>📝 Therapist Clinical Session Notes & Home Instructions</h3>
+        <div id="parent-therapist-notes-feed"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal 1: Student Unique ID Celebration Popup (when child registers account) -->
+  <div class="custom-modal-backdrop" id="student-unique-id-modal">
+    <div class="custom-modal-card student-card">
+      <div class="modal-icon-badge joy-badge">🌟</div>
+      <h3 class="modal-title">Your Unique Speech ID Is Ready!</h3>
+      <p class="modal-desc">
+        Share this unique code with your parent or speech therapist so they can connect to your speech journey and track your progress.
+      </p>
+      <div class="unique-id-display-box">
+        <div class="id-label">OFFICIAL LEARNER CODE</div>
+        <div class="id-code" id="modal-student-unique-id">ORB-4819</div>
+        <button class="btn-copy-id" id="btn-copy-student-id" onclick="window.appState.copyStudentId()">
+          📋 Copy Code
+        </button>
+      </div>
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+        💡 You can also find this code anytime at the top of your student dashboard!
+      </p>
+      <button class="btn-modal-action btn-gold" onclick="window.appState.closeStudentIdModal()">
+        🚀 Let's Start Exploring!
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Parent Child Unique ID Linking Modal (when parent enters portal) -->
+  <div class="custom-modal-backdrop" id="parent-link-child-modal">
+    <div class="custom-modal-card parent-card">
+      <div class="modal-icon-badge parent-badge">👨‍👩‍👧</div>
+      <h3 class="modal-title">Link / Add Child Account</h3>
+      <p class="modal-desc">
+        Enter your child's unique <strong>Learner ID</strong> (e.g. <code>ORB-4819</code> or <code>ORB-7320</code>) to add them to your Parent Hub. You can link and monitor multiple children from this dashboard.
+      </p>
+      
+      <form id="form-link-child" style="width: 100%; display: flex; flex-direction: column; gap: 14px;" onsubmit="event.preventDefault(); window.parentController.handleLinkChildSubmit();">
+        <div class="modal-input-group">
+          <label class="modal-input-label" for="input-child-unique-id">Child Unique Learner ID</label>
+          <div class="modal-input-wrapper">
+            <span class="input-icon">🆔</span>
+            <input type="text" id="input-child-unique-id" class="modal-input-field" placeholder="e.g. ORB-4819" required autocomplete="off" style="text-transform: uppercase;">
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 12px;">
+          <span style="font-weight: 800; color: #475569;">Quick Demo Children:</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn-demo-pill" onclick="window.parentController.fillDemoChildId('ORB-4819')">
+              ⚡ Aarav Sharma (ORB-4819)
+            </button>
+            <button type="button" class="btn-demo-pill" onclick="window.parentController.fillDemoChildId('ORB-7320')">
+              ⚡ Ananya Verma (ORB-7320)
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-modal-action btn-green">
+          ➕ Link Child Account
+        </button>
+        <button type="button" class="btn-modal-secondary" onclick="window.parentController.closeLinkModal()">
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Floating Quick Settings Trigger Pill (Always visible across pages) -->
+  <button type="button" class="floating-settings-trigger" id="btn-floating-settings" title="Open Settings, Character Avatar & Everyday Report">
+    <span class="gear-icon">⚙️</span>
+    <span>Settings & Report</span>
+  </button>
+
+  <!-- Settings Drawer Backdrop Overlay -->
+  <div class="settings-drawer-backdrop" id="settings-drawer-backdrop"></div>
+
+  <!-- =========================================================
+       UNIVERSAL SETTINGS SIDE PANEL & EVERYDAY REPORT DRAWER
+       ========================================================= -->
+  <aside class="settings-side-panel" id="settings-side-panel" aria-label="Platform Settings & Everyday Progress Report">
+    <!-- Drawer Header -->
+    <div class="settings-panel-header">
+      <div class="settings-panel-title-group">
+        <div class="settings-panel-icon">⚙️</div>
+        <div>
+          <div class="settings-panel-title">Settings & Everyday Report</div>
+          <div class="settings-panel-subtitle">Personalization, Avatar & Daily Speech Analytics</div>
+        </div>
+      </div>
+      <button type="button" class="btn-close-settings" id="btn-close-settings" title="Close Settings">✕</button>
+    </div>
+
+    <!-- Tabs Navigation Bar -->
+    <div class="settings-tabs-bar" role="tablist">
+      <button type="button" class="settings-tab-btn active" data-tab="profile">
+        <span>👤</span>
+        <span>Profile & Avatar</span>
+      </button>
+      <button type="button" class="settings-tab-btn" data-tab="report">
+        <span>📊</span>
+        <span>Everyday Report</span>
+        <span class="tab-badge-highlight">Daily</span>
+      </button>
+      <button type="button" class="settings-tab-btn" data-tab="audio">
+        <span>🔊</span>
+        <span>Audio & Cadence</span>
+      </button>
+      <button type="button" class="settings-tab-btn" data-tab="display">
+        <span>🎨</span>
+        <span>Display & Themes</span>
+      </button>
+      <button type="button" class="settings-tab-btn" data-tab="notifications">
+        <span>🔔</span>
+        <span>Reminders</span>
+      </button>
+    </div>
+
+    <!-- Drawer Scroll Body -->
+    <div class="settings-panel-body">
+      
+      <!-- TAB 1: PROFILE & AVATAR CUSTOMIZER -->
+      <div class="settings-tab-content active" id="tab-content-profile">
+        <!-- User Profile Summary Card -->
+        <div class="user-profile-header-card">
+          <div class="current-avatar-preview">
+            <span id="settings-current-avatar">👦</span>
+            <span class="avatar-sparkle">✨</span>
+          </div>
+          <div class="profile-details-column">
+            <div class="profile-user-name" id="settings-user-name">Aarav Sharma</div>
+            <div class="profile-role-tag" id="settings-user-role">🌟 Student Explorer</div>
+            <div class="profile-id-subtext" id="settings-user-id">ID: ORB-4819</div>
+          </div>
+        </div>
+
+        <!-- Avatar / Character Selector Section -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🎭 Choose Your Character / Avatar</span>
+            <span style="font-size: 11px; color: #0284c7; font-weight: 700;">Tap to select</span>
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
+            Pick an avatar character that represents you across your speech journey and clinical sessions:
+          </p>
+          <div class="avatar-selection-grid" id="avatar-selection-grid">
+            <!-- Populated dynamically based on active role -->
+          </div>
+        </div>
+
+        <!-- Account Privacy & Secure Session -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🔒 Account & Privacy</span>
+            <span style="font-size: 11px; color: #16a34a; font-weight: 700;">Protected Session</span>
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">
+            To ensure student HIPAA & clinical data privacy, switching roles or accounts requires signing in with authentication.
+          </p>
+          <button type="button" class="btn-duo btn-red" style="width: 100%; font-size: 13px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="window.settingsController.closeSettings(); window.appState.logout();">
+            <span>🚪</span>
+            <span>Log Out & Switch Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: EVERYDAY STUDENT PROGRESS REPORT -->
+      <div class="settings-tab-content" id="tab-content-report">
+        <!-- Report Header Banner -->
+        <div class="report-header-banner">
+          <div class="report-title-row">
+            <h3><span>📊</span> Daily Speech Progress Report</h3>
+            <span class="report-date-badge" id="report-current-date-label">Today • Sep 11, 2026</span>
+          </div>
+
+          <!-- Student Selector for Therapist View -->
+          <div class="report-student-selector-row" id="report-student-selector-box" style="display: none;">
+            <span style="font-size: 12px; font-weight: 800; color: #94a3b8;">Patient:</span>
+            <select id="report-student-select">
+              <option value="ORB-4819">Aarav Sharma (ORB-4819 • Age 6)</option>
+              <option value="ORB-7320">Ananya Verma (ORB-7320 • Age 7)</option>
+            </select>
+          </div>
+
+          <!-- Date Selection Pills -->
+          <div class="report-date-selector">
+            <button type="button" class="report-date-pill active" data-date="today">📅 Today (Sep 11)</button>
+            <button type="button" class="report-date-pill" data-date="yesterday">Yesterday (Sep 10)</button>
+            <button type="button" class="report-date-pill" data-date="prev">Sep 09</button>
+          </div>
+        </div>
+
+        <!-- Daily Stat Metric Grid -->
+        <div class="daily-stat-grid">
+          <div class="daily-metric-card">
+            <div class="daily-metric-label"><span>⏱️</span> Practice Time</div>
+            <div class="daily-metric-val" id="metric-practice-minutes">24 mins</div>
+            <div class="daily-metric-sub">↑ 4m above daily goal</div>
+          </div>
+          <div class="daily-metric-card">
+            <div class="daily-metric-label"><span>🎯</span> Overall Accuracy</div>
+            <div class="daily-metric-val" id="metric-accuracy-rate">89%</div>
+            <div class="daily-metric-sub">High phonetic fidelity</div>
+          </div>
+          <div class="daily-metric-card">
+            <div class="daily-metric-label"><span>⭐</span> Mastered Today</div>
+            <div class="daily-metric-val" id="metric-mastered-today">2 Sounds ⭐</div>
+            <div class="daily-metric-sub" style="color: #0284c7;">Vowel targets achieved</div>
+          </div>
+          <div class="daily-metric-card">
+            <div class="daily-metric-label"><span>🧠</span> Emotion Valence</div>
+            <div class="daily-metric-val" style="font-size: 16px; margin-top: 4px;" id="metric-emotion-state">Joy & Drive</div>
+            <div class="daily-metric-sub" style="color: #eab308;">Positive engagement</div>
+          </div>
+        </div>
+
+        <!-- Daily Practiced Phonemes List -->
+        <div class="practiced-phonemes-card">
+          <div class="settings-card-title" style="margin-bottom: 0;">
+            <span>👅 Sounds Practiced Today</span>
+            <span style="font-size: 11px; font-weight: 700; color: #16a34a;">Trial Breakdown</span>
+          </div>
+          <div class="practiced-chips-list" id="daily-practiced-phonemes-list">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Daily Clinical / Caregiver Note -->
+        <div class="daily-clinical-note-box">
+          <div class="daily-note-title" id="daily-note-title">
+            <span>🩺</span> Clinical Articulation Note
+          </div>
+          <div class="daily-note-body" id="daily-note-body">
+            Aarav demonstrated swift mastery of Hindi open vowels 'अ' and 'आ'. Coached parent on 3D tongue visualizer prompts for upcoming /k/ session.
+          </div>
+        </div>
+
+        <!-- Report Export Actions -->
+        <div class="report-action-row">
+          <button type="button" class="btn-report-action btn-print-report" id="btn-print-daily-report">
+            <span>🖨️</span>
+            <span>Print Daily Report</span>
+          </button>
+          <button type="button" class="btn-report-action btn-export-pdf" id="btn-export-daily-pdf">
+            <span>📥</span>
+            <span>Download Summary PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 3: AUDIO & VOICE SETTINGS -->
+      <div class="settings-tab-content" id="tab-content-audio">
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🔊 Speech Audio & Voice Coach</span>
+          </div>
+
+          <!-- Speech Speed Cadence -->
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Speech Cadence Speed</span>
+              <span>Slow rate enhances pediatric articulatory imitation</span>
+            </div>
+            <div class="segmented-control-group">
+              <button type="button" class="segmented-control-btn btn-cadence-speed" data-speed="0.6">0.6x</button>
+              <button type="button" class="segmented-control-btn btn-cadence-speed" data-speed="0.8">0.8x</button>
+              <button type="button" class="segmented-control-btn btn-cadence-speed active" data-speed="1.0">1.0x</button>
+            </div>
+          </div>
+
+          <!-- Sound FX Toggle -->
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Interactive Sound FX</span>
+              <span>Popping sounds, cheering chimes & reward fanfares</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-sfx" checked>
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+
+          <!-- Voice Cadence Prompts Toggle -->
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Pediatric Voice Cues</span>
+              <span>Spoken clinical prompts like 'Open wide like a lion'</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-voice-cues" checked>
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: DISPLAY & THEME SETTINGS -->
+      <div class="settings-tab-content" id="tab-content-display">
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🎨 Visual Theme & Color Mood</span>
+          </div>
+          <div class="theme-options-grid">
+            <div class="theme-option-card active" data-theme="sky">
+              <div class="theme-preview-circle sky"></div>
+              <div class="theme-option-name">Dynamic Sky</div>
+            </div>
+            <div class="theme-option-card" data-theme="twilight">
+              <div class="theme-preview-circle twilight"></div>
+              <div class="theme-option-name">Soft Twilight</div>
+            </div>
+            <div class="theme-option-card" data-theme="contrast">
+              <div class="theme-preview-circle contrast"></div>
+              <div class="theme-option-name">High Contrast</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>👓 Accessibility & Readability</span>
+          </div>
+
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Dyslexia-Friendly Sizing</span>
+              <span>Enlarged letter spacing and enhanced contrast</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-dyslexia-font">
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Reduced Motion Mode</span>
+              <span>Minimizes floating ambient animations</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-reduced-motion">
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: NOTIFICATIONS & REMINDERS -->
+      <div class="settings-tab-content" id="tab-content-notifications">
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🔔 Daily Practice Reminders</span>
+          </div>
+
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Daily Practice Push Alert</span>
+              <span>Gentle reminder at 5:00 PM for after-school practice</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-daily-reminder" checked>
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>Caregiver Daily Digest</span>
+              <span>Send progress summary email to parent every evening</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-caregiver-digest" checked>
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-control-row">
+            <div class="settings-control-label">
+              <span>5-Failure Clinical Alert</span>
+              <span>Instantly notify SLP when child struggles with 5 trials</span>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="toggle-struggle-alert" checked>
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Duolingo / Inside Out Toast Notification Stack -->
+  <div class="duo-toast-container" id="duo-toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/phoneme-data.js"></script>
+  <script src="js/audio-sfx.js"></script>
+  <script src="js/speech-engine.js"></script>
+  <script src="js/three-vocal-tract.js"></script>
+  <script src="js/student-view.js"></script>
+  <script src="js/therapist-view.js"></script>
+  <script src="js/parent-view.js"></script>
+  <script src="js/hero-controller.js"></script>
+  <script src="js/settings-controller.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

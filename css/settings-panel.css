@@ -1,0 +1,838 @@
+/* =========================================================
+   SETTINGS SIDE PANEL, AVATAR CUSTOMIZER & EVERYDAY REPORT
+   Glassmorphic Slide-Out Drawer with Inside Out Aesthetic
+   ========================================================= */
+
+/* Floating Quick Settings Trigger Pill (Always visible across pages) */
+.floating-settings-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 9999px;
+  padding: 10px 18px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4), 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(8px);
+}
+
+.floating-settings-trigger:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 14px 30px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+}
+
+.floating-settings-trigger .gear-icon {
+  font-size: 18px;
+  display: inline-block;
+  animation: slowGearRotate 12s linear infinite;
+}
+
+@keyframes slowGearRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Settings Drawer Backdrop Overlay */
+.settings-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.settings-drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Slide-Out Settings Panel */
+.settings-side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 520px;
+  max-width: 94vw;
+  height: 100vh;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%);
+  border-left: 2px solid rgba(226, 232, 240, 0.9);
+  box-shadow: -15px 0 40px rgba(15, 23, 42, 0.25);
+  z-index: 10001;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-family);
+}
+
+.settings-side-panel.active {
+  transform: translateX(0);
+}
+
+/* Panel Header */
+.settings-panel-header {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.settings-panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-panel-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffd200, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+}
+
+.settings-panel-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.settings-panel-subtitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.btn-close-settings {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-close-settings:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  transform: rotate(90deg);
+}
+
+/* Navigation Tabs Bar inside Drawer */
+.settings-tabs-bar {
+  display: flex;
+  background: #f1f5f9;
+  padding: 6px 14px;
+  gap: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.settings-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-tab-btn {
+  padding: 8px 12px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.settings-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #0f172a;
+}
+
+.settings-tab-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+
+.settings-tab-btn .tab-badge-highlight {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 900;
+}
+
+/* Panel Body & Scroll Area */
+.settings-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-tab-content {
+  display: none;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeInSettingsTab 0.25s ease forwards;
+}
+
+.settings-tab-content.active {
+  display: flex;
+}
+
+@keyframes fadeInSettingsTab {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Common Card Style inside Drawer */
+.settings-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.settings-card-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* =========================================================
+   TAB 1: PROFILE & AVATAR CUSTOMIZER
+   ========================================================= */
+.user-profile-header-card {
+  background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%);
+  border: 2px solid #bae6fd;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.current-avatar-preview {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  box-shadow: 0 8px 18px rgba(56, 189, 248, 0.3);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.current-avatar-preview .avatar-sparkle {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 16px;
+}
+
+.profile-details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.profile-user-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.profile-role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0369a1;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  width: fit-content;
+  border: 1px solid #bae6fd;
+}
+
+.profile-id-subtext {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* Avatar Selection Grid */
+.avatar-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.avatar-choice-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar-choice-card:hover {
+  transform: translateY(-3px);
+  border-color: #38bdf8;
+  background: #f0f9ff;
+}
+
+.avatar-choice-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  transform: scale(1.05);
+}
+
+.avatar-choice-icon {
+  font-size: 28px;
+}
+
+.avatar-choice-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+  text-align: center;
+}
+
+/* =========================================================
+   TAB 2: EVERYDAY STUDENT PROGRESS REPORT
+   ========================================================= */
+.report-header-banner {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-title-row h3 {
+  font-size: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-date-badge {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffd200;
+}
+
+/* Date Selector Pills */
+.report-date-selector {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.report-date-pill {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.report-date-pill:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.report-date-pill.active {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Student Selector for Therapist View */
+.report-student-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.report-student-selector-row select {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 800;
+  outline: none;
+}
+
+.report-student-selector-row select option {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+/* Daily Stat Metric Grid */
+.daily-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.daily-metric-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.daily-metric-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.daily-metric-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.daily-metric-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+/* Practiced Phonemes List Today */
+.practiced-phonemes-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.practiced-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.daily-phoneme-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 6px 12px;
+}
+
+.daily-phoneme-chip.mastered {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.daily-phoneme-chip.struggled {
+  background: #fff1f2;
+  border-color: #fda4af;
+}
+
+.daily-phoneme-symbol {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.daily-phoneme-score {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Daily Clinical Summary Note */
+.daily-clinical-note-box {
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.daily-note-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.daily-note-body {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* Daily Report Action Buttons */
+.report-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-report-action {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-print-report {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+}
+
+.btn-print-report:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-export-pdf {
+  background: #2563eb;
+  border: 1.5px solid #1d4ed8;
+  color: #ffffff;
+}
+
+.btn-export-pdf:hover {
+  background: #1d4ed8;
+}
+
+/* =========================================================
+   TAB 3: AUDIO & VOICE SETTINGS
+   ========================================================= */
+.settings-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settings-control-row:last-child {
+  border-bottom: none;
+}
+
+.settings-control-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-control-label span:first-child {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.settings-control-label span:last-child {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Segmented Control Buttons */
+.segmented-control-group {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 10px;
+  gap: 2px;
+}
+
+.segmented-control-btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.segmented-control-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* iOS-style Toggle Switch */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ios-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ios-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.ios-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .ios-slider {
+  background-color: #10b981;
+}
+
+input:checked + .ios-slider:before {
+  transform: translateX(20px);
+}
+
+/* Range Slider */
+.settings-range-slider {
+  width: 130px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+/* =========================================================
+   TAB 4: DISPLAY & THEME SETTINGS
+   ========================================================= */
+.theme-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.theme-option-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.theme-option-card:hover {
+  border-color: #38bdf8;
+}
+
+.theme-option-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.theme-preview-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.theme-preview-circle.sky {
+  background: linear-gradient(135deg, #dbeafe, #fef08a);
+}
+
+.theme-preview-circle.twilight {
+  background: linear-gradient(135deg, #312e81, #581c87);
+}
+
+.theme-preview-circle.contrast {
+  background: linear-gradient(135deg, #ffffff, #000000);
+}
+
+.theme-option-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+}
+
+/* Body Theme Classes */
+body.theme-twilight {
+  background-color: #1e1b4b !important;
+  background-image: 
+    radial-gradient(circle at 12% 20%, rgba(147, 51, 234, 0.35) 0%, transparent 40%),
+    radial-gradient(circle at 88% 30%, rgba(59, 130, 246, 0.3) 0%, transparent 40%),
+    linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #311042 100%) !important;
+  color: #f8fafc;
+}
+
+body.theme-high-contrast {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.dyslexia-font {
+  font-size: 17px !important;
+  letter-spacing: 0.04em !important;
+  word-spacing: 0.08em !important;
+  line-height: 1.6 !important;
+}
+
+/* Header Settings Button */
+.btn-header-settings {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-header-settings:hover {
+  background: #ffffff;
+  border-color: #38bdf8;
+  color: #0284c7;
+  transform: translateY(-1px);
+}
