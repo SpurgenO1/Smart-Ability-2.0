@@ -9,6 +9,9 @@ class StudentViewController {
   constructor() {
     this.currentPhoneme = getPhonemeById('swar_a') || getPhonemeById('ka');
     this.currentLevel = 'sound'; // 'sound', 'word', 'sentence'
+    this.unlockedLevels = new Set(['sound']); // Level 1 starts unlocked; Level 2 unlocks only after passing Level 1
+    this.activeWordIndex = 0;
+    this.activeSentenceIndex = 0;
     this.consecutiveFailures = 0;
     this.activeCategory = 'all';
 
@@ -124,7 +127,13 @@ class StudentViewController {
     const testSuccessBtn = document.getElementById('btn-test-success');
     if (testSuccessBtn) {
       testSuccessBtn.addEventListener('click', () => {
-        const res = window.speechEngine.simulateEvaluation(this.currentPhoneme, this.currentLevel, 'success');
+        const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+        const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+        const activeSentence = vocab.sentences[this.activeSentenceIndex] || this.currentPhoneme.sentenceLevel;
+        const targetText = this.currentLevel === 'sound' ? this.currentPhoneme.soundLevel.target :
+                           this.currentLevel === 'word' ? activeWord.word : activeSentence.sentence;
+
+        const res = window.speechEngine.simulateEvaluation(this.currentPhoneme, this.currentLevel, 'success', targetText);
         this.handlePronunciationResult(res);
       });
     }
@@ -132,7 +141,13 @@ class StudentViewController {
     const testStruggleBtn = document.getElementById('btn-test-struggle');
     if (testStruggleBtn) {
       testStruggleBtn.addEventListener('click', () => {
-        const res = window.speechEngine.simulateEvaluation(this.currentPhoneme, this.currentLevel, 'struggle');
+        const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+        const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+        const activeSentence = vocab.sentences[this.activeSentenceIndex] || this.currentPhoneme.sentenceLevel;
+        const targetText = this.currentLevel === 'sound' ? this.currentPhoneme.soundLevel.target :
+                           this.currentLevel === 'word' ? activeWord.word : activeSentence.sentence;
+
+        const res = window.speechEngine.simulateEvaluation(this.currentPhoneme, this.currentLevel, 'struggle', targetText);
         this.handlePronunciationResult(res);
       });
     }
@@ -690,19 +705,351 @@ class StudentViewController {
     }
   }
 
+  getPhonemeVocabulary(phoneme) {
+    if (typeof window.getPhonemeVocabulary === 'function') {
+      return window.getPhonemeVocabulary(phoneme);
+    }
+    return {
+      words: [phoneme.wordLevel],
+      sentences: [phoneme.sentenceLevel]
+    };
+  }
+
   async openPracticeRoom(phoneme) {
     this.currentPhoneme = phoneme;
     this.consecutiveFailures = 0;
+    this.activeWordIndex = 0;
+    this.activeSentenceIndex = 0;
     this.updateAttemptCounterUI();
+
+    // Default to Level 1 (Sound Level)
+    this.currentLevel = 'sound';
+    const isCompleted = window.appState && window.appState.completedPhonemes.has(phoneme.id);
+    this.unlockedLevels = isCompleted ? new Set(['sound', 'word', 'sentence']) : new Set(['sound']);
 
     document.getElementById('student-map-subview').classList.remove('active');
     document.getElementById('student-practice-subview').classList.add('active');
 
     this.updatePracticeStageUI();
     this.updateVideoSlotDisplay();
-    this.updatePetDialogue(`Awesome! Let's practice '${phoneme.symbol}' (${phoneme.name})! Complete levels to earn memory gems!`);
+    this.updatePetDialogue(`Awesome! Let's practice '${phoneme.symbol}' (${phoneme.name})! Complete Level 1 (Sound) to unlock Level 2 (Word)!`);
 
     await this.ensureBackendSession();
+  }
+
+  showPathMap() {
+    document.getElementById('student-practice-subview').classList.remove('active');
+    document.getElementById('student-map-subview').classList.add('active');
+    this.renderPathMap();
+    this.renderTileMatrix();
+  }
+
+  completeAndReturnToTrail() {
+    window.appState.markPhonemeCompleted(this.currentPhoneme.id);
+    this.showPathMap();
+    if (window.soundSFX) window.soundSFX.playCorrect();
+    setTimeout(() => {
+      const activeBtn = document.querySelector('.duo-node-btn.active-target');
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+  }
+
+  switchHierarchyLevel(level) {
+    if (!this.unlockedLevels.has(level)) {
+      const required = level === 'sentence' ? 'Level 2 (Word Level)' : 'Level 1 (Sound Level)';
+      if (window.soundSFX) window.soundSFX.playGentleTryAgain();
+      window.appState.showToast(
+        '🔒 Level Locked',
+        `Complete ${required} first with 80%+ accuracy to unlock ${level === 'sentence' ? 'Level 3' : 'Level 2'}!`,
+        'alert'
+      );
+      this.updatePetDialogue(`Complete ${required} first, then we'll unlock ${level === 'sentence' ? 'Level 3' : 'Level 2'} together! 🌟`);
+      return;
+    }
+
+    this.currentLevel = level;
+    this.updatePracticeStageUI();
+    this.hideFeedback();
+
+    const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+    const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+    const activeSentence = vocab.sentences[this.activeSentenceIndex] || this.currentPhoneme.sentenceLevel;
+
+    if (level === 'sound') {
+      this.updatePetDialogue(`Level 1: Sound Level! Say isolated '${this.currentPhoneme.symbol}'. Complete this level to unlock Level 2! (+20 🔮)`);
+    } else if (level === 'word') {
+      this.updatePetDialogue(`Level 2: Word Level! Practice saying word '${activeWord.word}'. Choose words below to practice! (+35 🔮)`);
+    } else if (level === 'sentence') {
+      this.updatePetDialogue(`Level 3: Sentence Level! Practice full carrier sentence. Speak clearly! (+50 🔮)`);
+    }
+  }
+
+  updatePracticeStageUI() {
+    const p = this.currentPhoneme;
+    if (!p) return;
+
+    const vocab = this.getPhonemeVocabulary(p);
+    const activeWord = vocab.words[this.activeWordIndex] || p.wordLevel;
+    const activeSentence = vocab.sentences[this.activeSentenceIndex] || p.sentenceLevel;
+
+    // Update Hierarchy Tabs with Locked/Unlocked state
+    document.querySelectorAll('.hierarchy-tab-btn').forEach(btn => {
+      const lvl = btn.dataset.level;
+      const isUnlocked = this.unlockedLevels ? this.unlockedLevels.has(lvl) : true;
+      btn.classList.toggle('active', lvl === this.currentLevel);
+      btn.classList.toggle('locked', !isUnlocked);
+
+      const labelSpan = btn.querySelector('span:last-child');
+      if (labelSpan) {
+        if (lvl === 'sound') labelSpan.textContent = '🔊 Sound Level (+20 🔮)';
+        else if (lvl === 'word') labelSpan.textContent = isUnlocked ? '📦 Word Level (+35 🔮)' : '🔒 Word Level (+35 🔮)';
+        else if (lvl === 'sentence') labelSpan.textContent = isUnlocked ? '💬 Sentence Level (+50 🔮)' : '🔒 Sentence Level (+50 🔮)';
+      }
+    });
+
+    const titleEl = document.getElementById('current-practice-title');
+    if (titleEl) titleEl.textContent = `${p.name} (${p.category || 'Speech Articulation'})`;
+
+    // 1. Level Stage Panes Visibility
+    const paneSound = document.getElementById('pane-level-sound');
+    const paneWord = document.getElementById('pane-level-word');
+    const paneSentence = document.getElementById('pane-level-sentence');
+
+    if (paneSound) paneSound.classList.toggle('active', this.currentLevel === 'sound');
+    if (paneWord) paneWord.classList.toggle('active', this.currentLevel === 'word');
+    if (paneSentence) paneSentence.classList.toggle('active', this.currentLevel === 'sentence');
+
+    // 2. Populate Level 1 (Sound Pane)
+    const soundLetter = document.getElementById('sound-target-letter');
+    if (soundLetter) soundLetter.textContent = p.symbol;
+
+    const soundIpa = document.getElementById('sound-target-ipa');
+    if (soundIpa) soundIpa.textContent = `${p.ipa} • ${p.category || 'Speech Articulation'}`;
+
+    const soundPediatric = document.getElementById('sound-pediatric-text');
+    if (soundPediatric && p.soundLevel) soundPediatric.textContent = p.soundLevel.pediatricCue;
+
+    // 3. Populate Level 2 (Word Pane)
+    const wordPhonemeBadge = document.getElementById('word-stage-phoneme-badge');
+    if (wordPhonemeBadge) wordPhonemeBadge.textContent = p.symbol;
+
+    const wordEmoji = document.getElementById('word-target-emoji');
+    if (wordEmoji) wordEmoji.textContent = activeWord.emoji || '📦';
+
+    const wordTitle = document.getElementById('word-target-title');
+    if (wordTitle) wordTitle.textContent = activeWord.word;
+
+    const wordMeaning = document.getElementById('word-target-meaning');
+    if (wordMeaning) {
+      wordMeaning.textContent = `${activeWord.transliteration || ''} — "${activeWord.meaning || ''}"`;
+    }
+
+    // Populate Word Bank Chips
+    const wordChipsRow = document.getElementById('word-bank-chips-row');
+    if (wordChipsRow) {
+      wordChipsRow.innerHTML = '';
+      vocab.words.forEach((w, idx) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `word-choice-chip ${idx === this.activeWordIndex ? 'active' : ''}`;
+        chip.innerHTML = `<span>${w.emoji || '📦'}</span> <span>${w.word}</span>`;
+        chip.title = `Practice word: ${w.word} (${w.meaning})`;
+        chip.onclick = () => {
+          this.activeWordIndex = idx;
+          this.updatePracticeStageUI();
+          if (window.soundSFX) window.soundSFX.playPop();
+          this.updatePetDialogue(`Switched target word to '${w.word}' (${w.meaning})! Let's practice!`);
+        };
+        wordChipsRow.appendChild(chip);
+      });
+    }
+
+    // 4. Populate Level 3 (Sentence Pane)
+    const sentencePhonemeBadge = document.getElementById('sentence-stage-phoneme-badge');
+    if (sentencePhonemeBadge) sentencePhonemeBadge.textContent = p.symbol;
+
+    const sentenceQuote = document.getElementById('sentence-target-quote');
+    if (sentenceQuote) sentenceQuote.textContent = `“${activeSentence.sentence}”`;
+
+    const sentenceTranslit = document.getElementById('sentence-target-translit');
+    if (sentenceTranslit) sentenceTranslit.textContent = activeSentence.transliteration || '';
+
+    const sentenceMeaning = document.getElementById('sentence-target-meaning');
+    if (sentenceMeaning) sentenceMeaning.textContent = `"${activeSentence.meaning || ''}"`;
+
+    // Populate Sentence Chips
+    const sentenceChipsRow = document.getElementById('sentence-chips-row');
+    if (sentenceChipsRow) {
+      sentenceChipsRow.innerHTML = '';
+      vocab.sentences.forEach((s, idx) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `sentence-choice-chip ${idx === this.activeSentenceIndex ? 'active' : ''}`;
+        chip.textContent = `Sentence ${idx + 1}`;
+        chip.title = s.sentence;
+        chip.onclick = () => {
+          this.activeSentenceIndex = idx;
+          this.updatePracticeStageUI();
+          if (window.soundSFX) window.soundSFX.playPop();
+        };
+        sentenceChipsRow.appendChild(chip);
+      });
+    }
+
+    // 5. Syllables Cadence Pills (Only for Word Level)
+    const syllableContainer = document.getElementById('syllable-cadence-pills');
+    if (syllableContainer) {
+      if (this.currentLevel === 'word' && activeWord.syllables && activeWord.syllables.length > 0) {
+        syllableContainer.style.display = 'flex';
+        syllableContainer.innerHTML = '';
+        activeWord.syllables.forEach((syl, i) => {
+          const pill = document.createElement('div');
+          pill.className = 'syllable-pill';
+          pill.id = `syllable-pill-${i}`;
+          pill.textContent = syl;
+          syllableContainer.appendChild(pill);
+        });
+      } else {
+        syllableContainer.style.display = 'none';
+      }
+    }
+
+    // 6. Audio Buttons & Actions
+    const btnPlayCadence = document.getElementById('btn-play-cadence');
+    const btnPlaySyllables = document.getElementById('btn-play-syllables');
+
+    if (btnPlayCadence) {
+      if (this.currentLevel === 'sound') {
+        btnPlayCadence.textContent = `🔊 Listen Sound ('${p.symbol}')`;
+      } else if (this.currentLevel === 'word') {
+        btnPlayCadence.textContent = `🔊 Listen Word ('${activeWord.word}')`;
+      } else if (this.currentLevel === 'sentence') {
+        btnPlayCadence.textContent = `🔊 Listen Full Sentence`;
+      }
+    }
+
+    if (btnPlaySyllables) {
+      btnPlaySyllables.style.display = (this.currentLevel === 'word') ? 'inline-flex' : 'none';
+    }
+
+    // 7. Mic Prompt Instruction
+    const micPrompt = document.getElementById('mic-action-prompt');
+    if (micPrompt) {
+      if (this.currentLevel === 'sound') {
+        micPrompt.textContent = `🗣️ Tap microphone, speak sound: "${p.symbol}" to earn Memory Orbs!`;
+      } else if (this.currentLevel === 'word') {
+        micPrompt.textContent = `🗣️ Tap microphone, speak word: "${activeWord.word}" to earn Memory Orbs!`;
+      } else if (this.currentLevel === 'sentence') {
+        micPrompt.textContent = `🗣️ Tap microphone, speak sentence: "${activeSentence.sentence}" to earn Memory Orbs!`;
+      }
+    }
+
+    // Clinical Demonstration Video status
+    const isUnlocked = p.unlocked3D || (window.appState && window.appState.unlockedPhonemes.has(p.id));
+    const badge = document.getElementById('badge-video-status');
+    if (badge) {
+      if (isUnlocked) {
+        badge.className = 'badge-3d-status unlocked';
+        badge.textContent = '🔓 Clinical Demonstration Video Unlocked!';
+      } else {
+        badge.className = 'badge-3d-status';
+        badge.textContent = '🎬 Dedicated Video Slot Ready';
+      }
+    }
+
+    const struggleBox = document.getElementById('struggle-alert-box');
+    if (struggleBox) struggleBox.classList.remove('active');
+  }
+
+  playPhoneticCadence() {
+    window.soundSFX.playPop();
+    const btn = document.getElementById('btn-play-cadence');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '🔊 Playing...';
+    }
+
+    const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+    const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+    const activeSentence = vocab.sentences[this.activeSentenceIndex] || this.currentPhoneme.sentenceLevel;
+
+    let textToSpeak = this.currentPhoneme.soundLevel.target;
+    if (this.currentLevel === 'word') textToSpeak = activeWord.word;
+    else if (this.currentLevel === 'sentence') textToSpeak = activeSentence.sentence;
+
+    window.speechEngine.speakPhonemeCadence(this.currentPhoneme, this.currentLevel, () => {
+      if (btn) {
+        btn.disabled = false;
+        if (this.currentLevel === 'sound') btn.textContent = `🔊 Listen Sound ('${this.currentPhoneme.symbol}')`;
+        else if (this.currentLevel === 'word') btn.textContent = `🔊 Listen Word ('${activeWord.word}')`;
+        else btn.textContent = `🔊 Listen Full Sentence`;
+      }
+    }, textToSpeak);
+  }
+
+  playSyllablesRhythm() {
+    window.soundSFX.playPop();
+    const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+    const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+    const syllables = activeWord.syllables || [];
+
+    window.speechEngine.speakSyllablesSequentially(
+      syllables,
+      (activeIdx) => {
+        document.querySelectorAll('.syllable-pill').forEach((pill, idx) => {
+          pill.classList.toggle('active', idx === activeIdx);
+        });
+      },
+      () => {
+        document.querySelectorAll('.syllable-pill').forEach(pill => pill.classList.remove('active'));
+      }
+    );
+  }
+
+  toggleLiveSpeechRecording() {
+    const micBtn = document.getElementById('btn-duo-mic');
+    if (!micBtn) return;
+
+    if (window.speechEngine.isListening) {
+      window.speechEngine.stopListening();
+      micBtn.classList.remove('recording');
+      micBtn.innerHTML = '🎤';
+      return;
+    }
+
+    const vocab = this.getPhonemeVocabulary(this.currentPhoneme);
+    const activeWord = vocab.words[this.activeWordIndex] || this.currentPhoneme.wordLevel;
+    const activeSentence = vocab.sentences[this.activeSentenceIndex] || this.currentPhoneme.sentenceLevel;
+    const targetText = this.currentLevel === 'sound' ? this.currentPhoneme.soundLevel.target :
+                       this.currentLevel === 'word' ? activeWord.word : activeSentence.sentence;
+
+    window.speechEngine.startListening({
+      phoneme: this.currentPhoneme,
+      level: this.currentLevel,
+      targetText: targetText,
+      onStart: () => {
+        micBtn.classList.add('recording');
+        micBtn.innerHTML = '⏹️';
+        window.soundSFX.playPop();
+        this.updatePetDialogue(`Listening for "${targetText}"! Speak clearly!`);
+      },
+      onResult: (evalResult) => {
+        micBtn.classList.remove('recording');
+        micBtn.innerHTML = '🎤';
+        this.handlePronunciationResult(evalResult);
+      },
+      onError: (err) => {
+        micBtn.classList.remove('recording');
+        micBtn.innerHTML = '🎤';
+        this.updatePetDialogue("Mic inactive or blocked. Try the 'Testing Controls' buttons below to practice and earn points!");
+      },
+      onEnd: () => {
+        micBtn.classList.remove('recording');
+        micBtn.innerHTML = '🎤';
+      }
+    });
   }
 
   async ensureBackendSession() {
@@ -773,31 +1120,64 @@ class StudentViewController {
       this.consecutiveFailures = 0;
       this.updateAttemptCounterUI();
 
-      // LEVEL COMPLETION REWARDS
+      // LEVEL 1 -> LEVEL 2 -> LEVEL 3 PROGRESSION
       let pointsAwarded = 20;
-      if (this.currentLevel === 'word') pointsAwarded = 35;
-      else if (this.currentLevel === 'sentence') pointsAwarded = 50;
+      let nextStepPrompt = '';
+      const advBtn = document.getElementById('btn-advance-next-sound');
+
+      if (this.currentLevel === 'sound') {
+        pointsAwarded = 20;
+        this.unlockedLevels.add('word');
+        nextStepPrompt = `Level 1 (Sound) Mastered! Level 2 (Word: '${this.currentPhoneme.wordLevel.word}') is now UNLOCKED!`;
+
+        if (advBtn) {
+          advBtn.style.display = 'block';
+          advBtn.innerHTML = `🌟 Level 1 Mastered! Proceed to Level 2 (Word: ${this.currentPhoneme.wordLevel.word}) →`;
+          advBtn.onclick = () => {
+            this.switchHierarchyLevel('word');
+            advBtn.style.display = 'none';
+          };
+        }
+      } else if (this.currentLevel === 'word') {
+        pointsAwarded = 35;
+        this.unlockedLevels.add('sentence');
+        nextStepPrompt = `Level 2 (Word) Mastered! Level 3 (Sentence) is now UNLOCKED!`;
+
+        if (advBtn) {
+          advBtn.style.display = 'block';
+          advBtn.innerHTML = `🌟 Level 2 Mastered! Proceed to Level 3 (Sentence) →`;
+          advBtn.onclick = () => {
+            this.switchHierarchyLevel('sentence');
+            advBtn.style.display = 'none';
+          };
+        }
+      } else if (this.currentLevel === 'sentence') {
+        pointsAwarded = 50;
+        window.appState.markPhonemeCompleted(this.currentPhoneme.id);
+
+        const allHindi = getAllPhonemes('hindi');
+        const currIdx = allHindi.findIndex(p => p.id === this.currentPhoneme.id);
+        const nextP = (currIdx !== -1 && currIdx < allHindi.length - 1) ? allHindi[currIdx + 1] : null;
+        nextStepPrompt = nextP ? `All 3 Levels Mastered! Next Sound '${nextP.symbol}' is glowing on your trail!` : 'You completed all letters!';
+
+        if (advBtn) {
+          advBtn.style.display = 'block';
+          advBtn.innerHTML = `🏆 Sound Mastered! Return to Trail & See Next Glowing Sound →`;
+          advBtn.onclick = () => {
+            this.completeAndReturnToTrail();
+          };
+        }
+      }
 
       window.appState.addPoints(pointsAwarded);
-
-      // Mark current sound completed & unlock glowing aura for next sound!
-      window.appState.markPhonemeCompleted(this.currentPhoneme.id);
-
-      const allHindi = getAllPhonemes('hindi');
-      const currIdx = allHindi.findIndex(p => p.id === this.currentPhoneme.id);
-      const nextP = (currIdx !== -1 && currIdx < allHindi.length - 1) ? allHindi[currIdx + 1] : null;
-      const nextHint = nextP ? `Sound '${nextP.symbol}' (${nextP.name}) is now glowing on your trail!` : 'You completed all letters!';
+      this.updatePracticeStageUI();
 
       document.getElementById('feedback-score-badge').textContent = `🎯 Accuracy: ${result.score}% (+${pointsAwarded} 🔮)`;
       document.getElementById('feedback-message').textContent = `${result.feedback} • Level Mastered!`;
-      document.getElementById('feedback-pediatric-tip').textContent = `🗣️ Spoken: "${result.transcript}" — ${result.pediatricTip} — ${nextHint}`;
+      document.getElementById('feedback-pediatric-tip').textContent = `🗣️ Spoken: "${result.transcript}" — ${result.pediatricTip} — ${nextStepPrompt}`;
 
-      this.updatePetDialogue(`🌟 YAY! Accuracy: ${result.score}%! You gained +${pointsAwarded} 🔮! ${nextHint}`);
+      this.updatePetDialogue(`🌟 YAY! Accuracy: ${result.score}%! (+${pointsAwarded} 🔮). ${nextStepPrompt}`);
       this.triggerConfetti();
-
-      // Show advance to glowing sound button
-      const advBtn = document.getElementById('btn-advance-next-sound');
-      if (advBtn) advBtn.style.display = 'block';
 
     } else {
       feedbackCard.classList.add('struggle');

@@ -32,7 +32,7 @@ class SpeechEngine {
    * Play target pronunciation with cadence control
    * Can speak syllable-by-syllable with configurable pauses
    */
-  speakPhonemeCadence(phonemeObj, level = 'word', onComplete = null) {
+  speakPhonemeCadence(phonemeObj, level = 'word', onComplete = null, customText = null) {
     if (!('speechSynthesis' in window)) {
       console.warn("Speech synthesis not supported in this browser.");
       if (onComplete) onComplete();
@@ -41,16 +41,17 @@ class SpeechEngine {
 
     window.speechSynthesis.cancel(); // Stop any pending speech
 
-    let textToSpeak = '';
+    let textToSpeak = customText;
     let lang = phonemeObj.category.includes('English') ? 'en-US' : 'hi-IN';
 
-    if (level === 'sound') {
-      textToSpeak = phonemeObj.soundLevel.target;
-    } else if (level === 'word') {
-      // Speak with rhythmic syllable spacing
-      textToSpeak = phonemeObj.wordLevel.word;
-    } else if (level === 'sentence') {
-      textToSpeak = phonemeObj.sentenceLevel.sentence;
+    if (!textToSpeak) {
+      if (level === 'sound') {
+        textToSpeak = phonemeObj.soundLevel.target;
+      } else if (level === 'word') {
+        textToSpeak = phonemeObj.wordLevel.word;
+      } else if (level === 'sentence') {
+        textToSpeak = phonemeObj.sentenceLevel.sentence;
+      }
     }
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -146,7 +147,7 @@ class SpeechEngine {
       const transcript = event.results[0][0].transcript.trim();
       const confidence = event.results[0][0].confidence || 0.85;
 
-      const evaluation = this.evaluatePronunciation(transcript, phoneme, level, confidence);
+      const evaluation = this.evaluatePronunciation(transcript, phoneme, level, confidence, targetText);
       if (onResult) onResult(evaluation);
     };
 
@@ -177,11 +178,13 @@ class SpeechEngine {
   /**
    * Phonetic comparison and accuracy scoring
    */
-  evaluatePronunciation(transcript, phoneme, level, baseConfidence = 0.8) {
-    let target = '';
-    if (level === 'sound') target = phoneme.soundLevel.target;
-    else if (level === 'word') target = phoneme.wordLevel.word;
-    else if (level === 'sentence') target = phoneme.sentenceLevel.sentence;
+  evaluatePronunciation(transcript, phoneme, level, baseConfidence = 0.8, customTarget = null) {
+    let target = customTarget;
+    if (!target) {
+      if (level === 'sound') target = phoneme.soundLevel.target;
+      else if (level === 'word') target = phoneme.wordLevel.word;
+      else if (level === 'sentence') target = phoneme.sentenceLevel.sentence;
+    }
 
     const cleanTarget = target.toLowerCase().replace(/[।.,?!]/g, '').trim();
     const cleanSpoken = transcript.toLowerCase().replace(/[।.,?!]/g, '').trim();
@@ -227,26 +230,31 @@ class SpeechEngine {
   /**
    * Simulated evaluation for quick testing and automated demonstration
    */
-  simulateEvaluation(phoneme, level, outcomeType = 'success') {
+  simulateEvaluation(phoneme, level, outcomeType = 'success', customTarget = null) {
     let score = 0;
     let transcript = "";
     let isSuccess = false;
 
+    let target = customTarget;
+    if (!target) {
+      target = level === 'sound' ? phoneme.soundLevel.target : 
+               level === 'word' ? phoneme.wordLevel.word : 
+               phoneme.sentenceLevel.sentence;
+    }
+
     if (outcomeType === 'success') {
       score = Math.floor(Math.random() * 12) + 88; // 88 - 99
-      transcript = level === 'sound' ? phoneme.soundLevel.target : 
-                   level === 'word' ? phoneme.wordLevel.word : 
-                   phoneme.sentenceLevel.sentence;
+      transcript = target;
       isSuccess = true;
     } else if (outcomeType === 'partial') {
       score = Math.floor(Math.random() * 15) + 70; // 70 - 84
-      transcript = level === 'sound' ? phoneme.soundLevel.target : phoneme.wordLevel.word;
+      transcript = target;
       isSuccess = true;
     } else {
       // Struggle / Failure (to test the 5-failure rule)
       score = Math.floor(Math.random() * 20) + 35; // 35 - 54
       // Give common substitution error
-      transcript = phoneme.commonError.split(':')[1]?.split('->')[0]?.trim() || "Unclear production";
+      transcript = phoneme.commonError ? (phoneme.commonError.split(':')[1]?.split('->')[0]?.trim() || "Unclear production") : "Unclear production";
       isSuccess = false;
     }
 
@@ -259,7 +267,7 @@ class SpeechEngine {
 
     return {
       transcript,
-      target: level === 'sound' ? phoneme.soundLevel.target : level === 'word' ? phoneme.wordLevel.word : phoneme.sentenceLevel.sentence,
+      target,
       score,
       isSuccess,
       feedback,

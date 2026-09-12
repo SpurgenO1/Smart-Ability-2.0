@@ -2124,3 +2124,439 @@ function getPhonemeById(id) {
   const all = getAllPhonemes();
   return all.find(p => p.id === id) || PHONEME_DATA.hindi[0];
 }
+
+const HINDI_VOCABULARY_BANK = {
+  swar_a: {
+    words: [
+      { word: "अनार", transliteration: "Anaar", meaning: "Pomegranate", emoji: "🍎", syllables: ["अ", "ना", "र"] },
+      { word: "अमरूद", transliteration: "Amrood", meaning: "Guava", emoji: "🍈", syllables: ["अ", "म", "रू", "द"] },
+      { word: "अदरक", transliteration: "Adrak", meaning: "Ginger", emoji: "🫚", syllables: ["अ", "द", "र", "क"] },
+      { word: "अजगर", transliteration: "Ajgar", meaning: "Python", emoji: "🐍", syllables: ["अ", "ज", "ग", "र"] }
+    ],
+    sentences: [
+      { sentence: "अ से अनार मीठा और लाल है।", transliteration: "Anaar meetha aur laal hai.", meaning: "Pomegranate is sweet and red." },
+      { sentence: "अमरूद बहुत गुणकारी और स्वादिष्ट फल है।", transliteration: "Amrood bahut swadisht phal hai.", meaning: "Guava is a very healthy and tasty fruit." }
+    ]
+  },
+  swar_aa: {
+    words: [
+      { word: "आम", transliteration: "Aam", meaning: "Mango", emoji: "🥭", syllables: ["आ", "म"] },
+      { word: "आग", transliteration: "Aag", meaning: "Fire", emoji: "🔥", syllables: ["आ", "ग"] },
+      { word: "आकाश", transliteration: "Aakaash", meaning: "Sky", emoji: "🌌", syllables: ["आ", "का", "श"] },
+      { word: "आलू", transliteration: "Aaloo", meaning: "Potato", emoji: "🥔", syllables: ["आ", "लू"] }
+    ],
+    sentences: [
+      { sentence: "आ से आम फलों का राजा है।", transliteration: "Aam phalon ka raja hai.", meaning: "Mango is the king of fruits." },
+      { sentence: "नीले आकाश में सुंदर बादल छाए हैं।", transliteration: "Neele aakaash mein baadal hain.", meaning: "Beautiful clouds are in the blue sky." }
+    ]
+  },
+  swar_i: {
+    words: [
+      { word: "इमली", transliteration: "Imli", meaning: "Tamarind", emoji: "🌿", syllables: ["इ", "म", "ली"] },
+      { word: "इमारत", transliteration: "Imaarat", meaning: "Building", emoji: "🏢", syllables: ["इ", "मा", "र", "त"] },
+      { word: "इलायची", transliteration: "Ilaaychi", meaning: "Cardamom", emoji: "🌱", syllables: ["इ", "ला", "य", "ची"] }
+    ],
+    sentences: [
+      { sentence: "इ से इमली खट्टी और चटपटी होती है।", transliteration: "Imli khatti hoti hai.", meaning: "Tamarind is sour and tangy." },
+      { sentence: "शहर में बहुत ऊँची इमारत है।", transliteration: "Shahar mein oonchi imaarat hai.", meaning: "There is a very tall building in the city." }
+    ]
+  },
+  swar_ee: {
+    words: [
+      { word: "ईख", transliteration: "Eekh", meaning: "Sugarcane", emoji: "🎋", syllables: ["ई", "ख"] },
+      { word: "ईंट", transliteration: "Eent", meaning: "Brick", emoji: "🧱", syllables: ["ईं", "ट"] },
+      { word: "ईश्वर", transliteration: "Ishwar", meaning: "God", emoji: "✨", syllables: ["ई", "श्व", "र"] }
+    ],
+    sentences: [
+      { sentence: "ई से ईख का मीठा रस पियो।", transliteration: "Eekh ka meetha ras piyo.", meaning: "Drink the sweet sugarcane juice." },
+      { sentence: "मज़बूत ईंट से सुंदर मकान बनता है।", transliteration: "Eent se sundar makaan banta hai.", meaning: "Strong bricks build a beautiful house." }
+    ]
+  },
+  swar_u: {
+    words: [
+      { word: "उल्लू", transliteration: "Ullu", meaning: "Owl", emoji: "🦉", syllables: ["उ", "ल्लूँ"] },
+      { word: "उपहार", transliteration: "Upahaar", meaning: "Gift", emoji: "🎁", syllables: ["उ", "प", "हा", "र"] },
+      { word: "उपवन", transliteration: "Upavan", meaning: "Garden", emoji: "🌺", syllables: ["उ", "प", "व", "न"] }
+    ],
+    sentences: [
+      { sentence: "उ से उल्लू रात में देखता है।", transliteration: "Ullu raat mein dekhta hai.", meaning: "The owl sees clearly at night." },
+      { sentence: "मुझे जन्मदिन पर सुंदर उपहार मिला।", transliteration: "Mujhe sundar upahaar mila.", meaning: "I got a lovely gift on my birthday." }
+    ]
+  },
+  swar_oo: {
+    words: [
+      { word: "ऊन", transliteration: "Oon", meaning: "Wool", emoji: "🧶", syllables: ["ऊ", "न"] },
+      { word: "ऊँट", transliteration: "Oont", meaning: "Camel", emoji: "🐪", syllables: ["ऊँ", "ट"] },
+      { word: "ऊपर", transliteration: "Oopar", meaning: "Above", emoji: "⬆️", syllables: ["ऊ", "प", "र"] }
+    ],
+    sentences: [
+      { sentence: "ऊ से ऊन से गरम स्वेटर बनता है।", transliteration: "Oon se garam sweater banta hai.", meaning: "Warm sweaters are knit from wool." },
+      { sentence: "ऊँट रेगिस्तान की रेत पर तेज़ चलता है।", transliteration: "Oont registan mein chalta hai.", meaning: "The camel walks fast across desert sands." }
+    ]
+  },
+  ka: {
+    words: [
+      { word: "कमल", transliteration: "Kamal", meaning: "Lotus", emoji: "🪷", syllables: ["क", "म", "ल"] },
+      { word: "कबूतर", transliteration: "Kabootar", meaning: "Pigeon", emoji: "🕊️", syllables: ["क", "बू", "तर"] },
+      { word: "किताब", transliteration: "Kitaab", meaning: "Book", emoji: "📖", syllables: ["कि", "ता", "ब"] },
+      { word: "कलम", transliteration: "Kalam", meaning: "Pen", emoji: "🖊️", syllables: ["क", "ल", "म"] }
+    ],
+    sentences: [
+      { sentence: "कमल पानी में सुंदर खिलता है।", transliteration: "Kamal paani mein khilta hai.", meaning: "The lotus blooms beautifully in the water." },
+      { sentence: "सफेद कबूतर दाना चुगता है।", transliteration: "Kabootar daana chugta hai.", meaning: "The white pigeon is pecking at grains." },
+      { sentence: "मैं रोज़ ज्ञानवर्धक किताब पढ़ता हूँ।", transliteration: "Main roz kitaab padhta hoon.", meaning: "I read an insightful book every day." }
+    ]
+  },
+  kha: {
+    words: [
+      { word: "खरगोश", transliteration: "Khargosh", meaning: "Rabbit", emoji: "🐇", syllables: ["ख", "र", "गो", "श"] },
+      { word: "खत", transliteration: "Khat", meaning: "Letter", emoji: "✉️", syllables: ["ख", "त"] },
+      { word: "खिड़की", transliteration: "Khidki", meaning: "Window", emoji: "🪟", syllables: ["खि", "ड़", "की"] },
+      { word: "खीर", transliteration: "Kheer", meaning: "Sweet Pudding", emoji: "🥣", syllables: ["खी", "र"] }
+    ],
+    sentences: [
+      { sentence: "छोटा खरगोश हरी गाजर खाता है।", transliteration: "Khargosh gajar khata hai.", meaning: "The little rabbit munches on green carrots." },
+      { sentence: "खिड़की से ठंडी और ताज़ी हवा आती है।", transliteration: "Khidki se taazi hawa aati hai.", meaning: "Fresh cool breeze enters through the window." }
+    ]
+  },
+  ga: {
+    words: [
+      { word: "गमला", transliteration: "Gamla", meaning: "Flowerpot", emoji: "🪴", syllables: ["ग", "म", "ला"] },
+      { word: "गाय", transliteration: "Gaay", meaning: "Cow", emoji: "🐄", syllables: ["गा", "य"] },
+      { word: "गुलाब", transliteration: "Gulaab", meaning: "Rose", emoji: "🌹", syllables: ["गु", "ला", "ब"] },
+      { word: "गेंद", transliteration: "Gend", meaning: "Ball", emoji: "⚽", syllables: ["गें", "द"] }
+    ],
+    sentences: [
+      { sentence: "गमले में सुंदर लाल गुलाब खिला है।", transliteration: "Gamle mein gulaab khila hai.", meaning: "A lovely red rose bloomed in the flowerpot." },
+      { sentence: "गाय हमें पौष्टिक और मीठा दूध देती है।", transliteration: "Gaay meetha doodh deti hai.", meaning: "The cow provides nourishing sweet milk." }
+    ]
+  },
+  gha: {
+    words: [
+      { word: "घर", transliteration: "Ghar", meaning: "House", emoji: "🏠", syllables: ["घ", "र"] },
+      { word: "घड़ी", transliteration: "Ghadi", meaning: "Clock", emoji: "⏰", syllables: ["घ", "ड़ी"] },
+      { word: "घोड़ा", transliteration: "Ghodaa", meaning: "Horse", emoji: "🐎", syllables: ["घो", "ड़ा"] },
+      { word: "घड़ा", transliteration: "Ghadaa", meaning: "Clay Pot", emoji: "🏺", syllables: ["घ", "ड़ा"] }
+    ],
+    sentences: [
+      { sentence: "हमारा प्यारा घर बहुत सुंदर और साफ़ है।", transliteration: "Humara ghar bahut sundar hai.", meaning: "Our cozy home is very beautiful and clean." },
+      { sentence: "दीवार घड़ी बिल्कुल सही समय बताती है।", transliteration: "Ghadi sahi samay batati hai.", meaning: "The wall clock shows the exact right time." }
+    ]
+  },
+  cha: {
+    words: [
+      { word: "चम्मच", transliteration: "Chammach", meaning: "Spoon", emoji: "🥄", syllables: ["च", "म्म", "च"] },
+      { word: "चाँद", transliteration: "Chaand", meaning: "Moon", emoji: "🌙", syllables: ["चाँ", "द"] },
+      { word: "चिड़िया", transliteration: "Chidiya", meaning: "Sparrow", emoji: "🐦", syllables: ["चि", "ड़ि", "या"] }
+    ],
+    sentences: [
+      { sentence: "आसमान में चाँदी जैसा चाँद चमकता है।", transliteration: "Aasmaan mein chaand chamakta hai.", meaning: "The silvery moon shines bright in the sky." },
+      { sentence: "चिड़िया पेड़ की डाल पर चहक रही है।", transliteration: "Chidiya daal par chahakti hai.", meaning: "The sparrow is chirping cheerfully on the branch." }
+    ]
+  },
+  chha: {
+    words: [
+      { word: "छतरी", transliteration: "Chhatri", meaning: "Umbrella", emoji: "☂️", syllables: ["छ", "त", "री"] },
+      { word: "छत", transliteration: "Chhat", meaning: "Roof", emoji: "🏠", syllables: ["छ", "त"] },
+      { word: "छात्र", transliteration: "Chhaatra", meaning: "Student", emoji: "🎒", syllables: ["छा", "त्र"] }
+    ],
+    sentences: [
+      { sentence: "बारिश में रंगीन छतरी बहुत काम आती है।", transliteration: "Barish mein chhatri kaam aati hai.", meaning: "The colorful umbrella is very handy in the rain." },
+      { sentence: "मेहनती छात्र समय पर विद्यालय जाता है।", transliteration: "Chhaatra vidyalay jaata hai.", meaning: "The diligent student goes to school on time." }
+    ]
+  },
+  ja: {
+    words: [
+      { word: "जहाज़", transliteration: "Jahaaz", meaning: "Ship", emoji: "🚢", syllables: ["ज", "हा", "ज़"] },
+      { word: "जल", transliteration: "Jal", meaning: "Water", emoji: "💧", syllables: ["ज", "ल"] },
+      { word: "जलेबी", transliteration: "Jalebi", meaning: "Jalebi", emoji: "🥨", syllables: ["ज", "ले", "बी"] },
+      { word: "जग", transliteration: "Jag", meaning: "Jug", emoji: "🫗", syllables: ["ज", "ग"] }
+    ],
+    sentences: [
+      { sentence: "समुद्र की लहरों पर बड़ा जहाज़ तैरता है।", transliteration: "Jahaaz samudra par tairta hai.", meaning: "The large ship sails upon ocean waves." },
+      { sentence: "साफ़ और शीतल जल ही जीवन है।", transliteration: "Jal hi jeevan hai.", meaning: "Clean and cool water is truly life itself." }
+    ]
+  },
+  jha: {
+    words: [
+      { word: "झंडा", transliteration: "Jhandaa", meaning: "Flag", emoji: "🚩", syllables: ["झं", "डा"] },
+      { word: "झरना", transliteration: "Jharnaa", meaning: "Waterfall", emoji: "🏞️", syllables: ["झ", "र", "ना"] },
+      { word: "झूला", transliteration: "Jhoolaa", meaning: "Swing", emoji: "🪅", syllables: ["झू", "ला"] }
+    ],
+    sentences: [
+      { sentence: "हमारा तिरंगा झंडा शान से लहराता है।", transliteration: "Tiranga jhandaa lahrata hai.", meaning: "Our tricolor flag flutters proudly in the breeze." },
+      { sentence: "पहाड़ से गिरता हुआ झरना बहुत सुंदर लगता है।", transliteration: "Jharnaa sundar lagta hai.", meaning: "The waterfall cascading from the mountain is breathtaking." }
+    ]
+  },
+  ta_retro: {
+    words: [
+      { word: "टमाटर", transliteration: "Tamaatar", meaning: "Tomato", emoji: "🍅", syllables: ["ट", "मा", "ट", "र"] },
+      { word: "टोपी", transliteration: "Topi", meaning: "Cap", emoji: "🧢", syllables: ["टो", "पी"] },
+      { word: "टोकरी", transliteration: "Tokri", meaning: "Basket", emoji: "🧺", syllables: ["टो", "क", "री"] }
+    ],
+    sentences: [
+      { sentence: "लाल टमाटर ताज़ा और बहुत रसीला है।", transliteration: "Laal tamaatar raseela hai.", meaning: "The red tomato is fresh and juicy." },
+      { sentence: "दादाजी ने धूप से बचने के लिए टोपी पहनी।", transliteration: "Dada ne topi pehni.", meaning: "Grandfather wore a cap to protect from the sun." }
+    ]
+  },
+  tha_retro: {
+    words: [
+      { word: "ठठेरा", transliteration: "Thatheera", meaning: "Coppersmith", emoji: "🔨", syllables: ["ठ", "ठे", "रा"] },
+      { word: "ठेला", transliteration: "Thelaa", meaning: "Cart", emoji: "🛒", syllables: ["ठे", "ला"] },
+      { word: "ठंड", transliteration: "Thand", meaning: "Cold", emoji: "❄️", syllables: ["ठं", "ड"] }
+    ],
+    sentences: [
+      { sentence: "सर्दियों की सुबह बहुत ठंड लगती है।", transliteration: "Sardiyon mein thand lagti hai.", meaning: "It feels very chilly on winter mornings." },
+      { sentence: "ठेले पर ताज़े और मीठे फल बिक रहे हैं।", transliteration: "Thele par phal bik rahe hain.", meaning: "Fresh and sweet fruits are being sold on the cart." }
+    ]
+  },
+  da_retro: {
+    words: [
+      { word: "डमरू", transliteration: "Damroo", meaning: "Pellet Drum", emoji: "🪘", syllables: ["ड", "म", "रू"] },
+      { word: "डाकिया", transliteration: "Daakiyaa", meaning: "Postman", emoji: "📮", syllables: ["डा", "कि", "या"] },
+      { word: "डिब्बा", transliteration: "Dibbaa", meaning: "Box", emoji: "📦", syllables: ["डि", "ब्बा"] }
+    ],
+    sentences: [
+      { sentence: "शिवजी का डमरू डम-डम मधुर बजता है।", transliteration: "Damroo dam-dam bajta hai.", meaning: "Lord Shiva's drum beats melodiously." },
+      { sentence: "डाकिया घर-घर जाकर ज़रूरी पत्र पहुँचाता है।", transliteration: "Daakiyaa patra pahunchaata hai.", meaning: "The postman delivers important letters door to door." }
+    ]
+  },
+  dha_retro: {
+    words: [
+      { word: "ढोलक", transliteration: "Dholak", meaning: "Drum", emoji: "🥁", syllables: ["ढो", "ल", "क"] },
+      { word: "ढक्कन", transliteration: "Dhakkan", meaning: "Lid", emoji: "🫙", syllables: ["ढ", "क्क", "न"] },
+      { word: "ढाल", transliteration: "Dhaal", meaning: "Shield", emoji: "🛡️", syllables: ["ढा", "ल"] }
+    ],
+    sentences: [
+      { sentence: "उत्सव और त्योहार पर ढोलक की थाप गूँजती है।", transliteration: "Dholak bajti hai.", meaning: "The rhythmic beat of the drum echoes during celebrations." },
+      { sentence: "पानी के मटके पर साफ़ ढक्कन लगाना चाहिए।", transliteration: "Dhakkan lagana chahiye.", meaning: "One must keep clean lids on water pots." }
+    ]
+  },
+  na_retro: {
+    words: [
+      { word: "बाण", transliteration: "Baan", meaning: "Arrow", emoji: "🏹", syllables: ["बा", "ण"] },
+      { word: "वीणा", transliteration: "Veenaa", meaning: "Lute", emoji: "🎸", syllables: ["वी", "णा"] },
+      { word: "चरण", transliteration: "Charan", meaning: "Feet", emoji: "👣", syllables: ["च", "र", "ण"] }
+    ],
+    sentences: [
+      { sentence: "माता सरस्वती सुंदर वीणा बजाती हैं।", transliteration: "Saraswati veenaa bajati hain.", meaning: "Goddess Saraswati plays the enchanting veena." },
+      { sentence: "सुबह उठकर बड़ों के चरण स्पर्श करने चाहिए।", transliteration: "Charan sparsh karo.", meaning: "One should touch the feet of elders each morning." }
+    ]
+  },
+  ta_dental: {
+    words: [
+      { word: "तोता", transliteration: "Totaa", meaning: "Parrot", emoji: "🦜", syllables: ["तो", "ता"] },
+      { word: "तरबूज", transliteration: "Tarbooj", meaning: "Watermelon", emoji: "🍉", syllables: ["त", "र", "बू", "ज"] },
+      { word: "तितली", transliteration: "Titli", meaning: "Butterfly", emoji: "🦋", syllables: ["ति", "त", "ली"] },
+      { word: "ताला", transliteration: "Taalaa", meaning: "Lock", emoji: "🔒", syllables: ["ता", "ला"] }
+    ],
+    sentences: [
+      { sentence: "हरा तोता मीठी वाणी बोलता है।", transliteration: "Totaa meethi vaani बोलता hai.", meaning: "The green parrot speaks sweet words." },
+      { sentence: "रंगीन तितली फूलों पर मँडराती है।", transliteration: "Titli phoolon par mandraati hai.", meaning: "The colorful butterfly hovers over blossoms." }
+    ]
+  },
+  tha_dental: {
+    words: [
+      { word: "थाली", transliteration: "Thaali", meaning: "Plate", emoji: "🍽️", syllables: ["था", "ली"] },
+      { word: "थर्मस", transliteration: "Thermos", meaning: "Flask", emoji: "🧴", syllables: ["थ", "र", "म", "स"] },
+      { word: "थैला", transliteration: "Thelaa", meaning: "Cloth Bag", emoji: "🛍️", syllables: ["थै", "ला"] }
+    ],
+    sentences: [
+      { sentence: "माँ ने थाली में स्वादिष्ट गरमागरम भोजन परोसा।", transliteration: "Thaali mein bhojan hai.", meaning: "Mother served delicious piping-hot food on the plate." },
+      { sentence: "थर्मस में दूध देर तक गरम रहता है।", transliteration: "Thermos mein doodh garam hai.", meaning: "Milk stays warm in the thermos for hours." }
+    ]
+  },
+  da_dental: {
+    words: [
+      { word: "दीपक", transliteration: "Deepak", meaning: "Lamp", emoji: "🪔", syllables: ["दी", "प", "क"] },
+      { word: "दरवाजा", transliteration: "Darwaazaa", meaning: "Door", emoji: "🚪", syllables: ["द", "र", "वा", "ज़ा"] },
+      { word: "दूध", transliteration: "Doodh", meaning: "Milk", emoji: "🥛", syllables: ["दू", "ध"] }
+    ],
+    sentences: [
+      { sentence: "दिवाली पर जगमगाता दीपक घर को रोशन करता है।", transliteration: "Deepak ghar ko roshan karta hai.", meaning: "On Diwali, sparkling oil lamps illuminate the house." },
+      { sentence: "रोज़ सुबह ताज़ा दूध पीना सेहत के लिए अच्छा है।", transliteration: "Doodh peena accha hai.", meaning: "Drinking fresh milk every morning is great for health." }
+    ]
+  },
+  dha_dental: {
+    words: [
+      { word: "धनुष", transliteration: "Dhanush", meaning: "Bow", emoji: "🏹", syllables: ["ध", "नु", "ष"] },
+      { word: "धोबी", transliteration: "Dhobi", meaning: "Washerman", emoji: "🧺", syllables: ["धो", "बी"] },
+      { word: "धरती", transliteration: "Dhartee", meaning: "Earth", emoji: "🌍", syllables: ["ध", "र", "ती"] }
+    ],
+    sentences: [
+      { sentence: "श्री राम ने विशाल शिव धनुष पर प्रत्यंचा चढ़ाई।", transliteration: "Ram ne dhanush uthaya.", meaning: "Lord Rama strung the grand divine bow." },
+      { sentence: "हमारी हरी-भरी धरती प्रकृति का अनमोल उपहार है।", transliteration: "Dhartee anmol uphaar hai.", meaning: "Our verdant Earth is nature's most precious gift." }
+    ]
+  },
+  na_dental: {
+    words: [
+      { word: "नदी", transliteration: "Nadi", meaning: "River", emoji: "🏞️", syllables: ["न", "दी"] },
+      { word: "नल", transliteration: "Nal", meaning: "Tap", emoji: "🚰", syllables: ["न", "ल"] },
+      { word: "नाव", transliteration: "Naav", meaning: "Boat", emoji: "⛵", syllables: ["ना", "व"] }
+    ],
+    sentences: [
+      { sentence: "पहाड़ों से शीतल और निर्मल नदी बहती है।", transliteration: "Nadi bahti hai.", meaning: "A cool and pure river flows from the mountains." },
+      { sentence: "नदी में रंग-बिरंगी नाव तैर रही है।", transliteration: "Naav tair rahi hai.", meaning: "A colorful boat is floating along the river." }
+    ]
+  },
+  pa: {
+    words: [
+      { word: "पतंग", transliteration: "Patang", meaning: "Kite", emoji: "🪁", syllables: ["प", "तं", "ग"] },
+      { word: "पेड़", transliteration: "Ped", meaning: "Tree", emoji: "🌳", syllables: ["पे", "ड़"] },
+      { word: "पानी", transliteration: "Paani", meaning: "Water", emoji: "💧", syllables: ["पा", "नी"] },
+      { word: "पक्षी", transliteration: "Pakshi", meaning: "Bird", emoji: "🐦", syllables: ["प", "क्षी"] }
+    ],
+    sentences: [
+      { sentence: "नीले गगन में ऊँची रंगीन पतंग उड़ रही है।", transliteration: "Patang udti hai.", meaning: "A colorful kite is soaring high in the blue sky." },
+      { sentence: "पेड़ हमें ठंडी छाया और ताज़ी हवा देते हैं।", transliteration: "Ped chhaya dete hain.", meaning: "Trees provide us with cool shade and fresh air." }
+    ]
+  },
+  pha: {
+    words: [
+      { word: "फल", transliteration: "Phal", meaning: "Fruit", emoji: "🍎", syllables: ["फ", "ल"] },
+      { word: "फूल", transliteration: "Phool", meaning: "Flower", emoji: "🌸", syllables: ["फू", "ल"] },
+      { word: "फव्वारा", transliteration: "Phavvaara", meaning: "Fountain", emoji: "⛲", syllables: ["फ", "व्वा", "रा"] }
+    ],
+    sentences: [
+      { sentence: "बगीचे में खुशबूदार और सुंदर फूल खिले हैं।", transliteration: "Phool khile hain.", meaning: "Fragrant and beautiful flowers have blossomed in the garden." },
+      { sentence: "रोज़ ताज़े और मौसमी फल खाने से शक्ति मिलती है।", transliteration: "Phal khane chahiye.", meaning: "Eating fresh seasonal fruits grants great vitality." }
+    ]
+  },
+  ba: {
+    words: [
+      { word: "बत्तख", transliteration: "Batthakh", meaning: "Duck", emoji: "🦆", syllables: ["ब", "त्त", "ख"] },
+      { word: "बस", transliteration: "Bas", meaning: "Bus", emoji: "🚌", syllables: ["ब", "स"] },
+      { word: "बकरी", transliteration: "Bakri", meaning: "Goat", emoji: "🐐", syllables: ["ब", "क", "री"] },
+      { word: "बादल", transliteration: "Baadal", meaning: "Cloud", emoji: "☁️", syllables: ["बा", "द", "ल"] }
+    ],
+    sentences: [
+      { sentence: "सफेद बत्तख शांत तालाब में तैरती है।", transliteration: "Batthakh tairti hai.", meaning: "The white duck swims gracefully across the calm pond." },
+      { sentence: "आसमान में रुई जैसे सफेद बादल तैर रहे हैं।", transliteration: "Baadal tairte hain.", meaning: "Cotton-like white clouds are drifting across the sky." }
+    ]
+  },
+  bha: {
+    words: [
+      { word: "भालू", transliteration: "Bhaaloo", meaning: "Bear", emoji: "🐻", syllables: ["भा", "लू"] },
+      { word: "भवन", transliteration: "Bhavan", meaning: "Mansion", emoji: "🏛️", syllables: ["भ", "व", "न"] },
+      { word: "भोजन", transliteration: "Bhojan", meaning: "Meal", emoji: "🍲", syllables: ["भो", "ज", "न"] }
+    ],
+    sentences: [
+      { sentence: "जंगल में बड़ा भालू मीठा शहद खाता है।", transliteration: "Bhaaloo shahed khata hai.", meaning: "The big bear in the forest loves eating sweet honey." },
+      { sentence: "स्वस्थ रहने के लिए समय पर सादा भोजन करो।", transliteration: "Bhojan karo.", meaning: "Eat wholesome simple meals on time to stay healthy." }
+    ]
+  },
+  ma: {
+    words: [
+      { word: "मछली", transliteration: "Machhli", meaning: "Fish", emoji: "🐟", syllables: ["म", "छ", "ली"] },
+      { word: "मोर", transliteration: "Mor", meaning: "Peacock", emoji: "🦚", syllables: ["मो", "र"] },
+      { word: "मटर", transliteration: "Matar", meaning: "Peas", emoji: "🫛", syllables: ["म", "ट", "र"] }
+    ],
+    sentences: [
+      { sentence: "मछली जल की रानी है उसका जीवन पानी है।", transliteration: "Machhli jal ki rani hai.", meaning: "The fish is the queen of the water, its life is the water." },
+      { sentence: "सावन की रिमझिम बारिश में मोर पंख फैलाकर नाचता है।", transliteration: "Mor naachta hai.", meaning: "In the gentle monsoon rain, the peacock dances with spread feathers." }
+    ]
+  },
+  ya: {
+    words: [
+      { word: "यज्ञ", transliteration: "Yagya", meaning: "Sacred Fire", emoji: "🔥", syllables: ["य", "ज्ञ"] },
+      { word: "योग", transliteration: "Yoga", meaning: "Yoga", emoji: "🧘", syllables: ["यो", "ग"] },
+      { word: "यात्री", transliteration: "Yaatri", meaning: "Traveler", emoji: "🧳", syllables: ["या", "त्री"] }
+    ],
+    sentences: [
+      { sentence: "प्रातः काल योग करने से शरीर और मन स्वस्थ रहता है।", transliteration: "Yoga se shareer swasth rehta hai.", meaning: "Practicing yoga in the morning keeps mind and body healthy." },
+      { sentence: "यात्री अपने गंतव्य की ओर आनंद से जा रहे हैं।", transliteration: "Yaatri ja rahe hain.", meaning: "The travelers are joyfully proceeding towards their destination." }
+    ]
+  },
+  ra: {
+    words: [
+      { word: "रेलगाड़ी", transliteration: "Railgaadi", meaning: "Train", emoji: "🚆", syllables: ["रे", "ल", "गा", "ड़ी"] },
+      { word: "रथ", transliteration: "Rath", meaning: "Chariot", emoji: "🛞", syllables: ["र", "थ"] },
+      { word: "रस्सी", transliteration: "Rassi", meaning: "Rope", emoji: "🪢", syllables: ["र", "स्सी"] }
+    ],
+    sentences: [
+      { sentence: "छुक-छुक करती हुई रेलगाड़ी स्टेशन पर पहुँची।", transliteration: "Railgaadi station aayi.", meaning: "The chugging train arrived smoothly at the station." },
+      { sentence: "राजा स्वर्ण रथ पर बैठकर नगर भ्रमण पर निकले।", transliteration: "Raja rath par baithe.", meaning: "The king set forth on his royal chariot to tour the city." }
+    ]
+  },
+  la: {
+    words: [
+      { word: "लट्टू", transliteration: "Lattoo", meaning: "Top", emoji: "🪀", syllables: ["ल", "ट्टू"] },
+      { word: "लड़की", transliteration: "Ladki", meaning: "Girl", emoji: "👧", syllables: ["ल", "ड़", "की"] },
+      { word: "लोमड़ी", transliteration: "Lomdi", meaning: "Fox", emoji: "🦊", syllables: ["लो", "म", "ड़ी"] },
+      { word: "लड्डू", transliteration: "Laddu", meaning: "Sweet Laddu", emoji: "🟡", syllables: ["ल", "ड्डू"] }
+    ],
+    sentences: [
+      { sentence: "रंग-बिरंगा लट्टू ज़मीन पर तेज़ी से घूमता है।", transliteration: "Lattoo ghoomta hai.", meaning: "The colorful spinning top whirls rapidly on the floor." },
+      { sentence: "चालाक लोमड़ी जंगल में इधर-उधर घूमती है।", transliteration: "Lomdi ghoomti hai.", meaning: "The clever fox wanders through the dense forest." }
+    ]
+  },
+  va: {
+    words: [
+      { word: "वन", transliteration: "Van", meaning: "Forest", emoji: "🌲", syllables: ["व", "न"] },
+      { word: "वर्षा", transliteration: "Varshaa", meaning: "Rain", emoji: "🌧️", syllables: ["व", "र्षा"] },
+      { word: "वक", transliteration: "Vak", meaning: "Crane", emoji: "🦩", syllables: ["व", "क"] }
+    ],
+    sentences: [
+      { sentence: "वन में अनगिनत हरे-भरे वृक्ष और पशु-पक्षी हैं।", transliteration: "Van mein ped hain.", meaning: "There are countless lush trees and animals in the forest." },
+      { sentence: "सावन मास में रिमझिम वर्षा से धरती महक उठी।", transliteration: "Varshaa se dhartee mahki.", meaning: "Gentle monsoon showers made the earth fragrant." }
+    ]
+  },
+  sha: {
+    words: [
+      { word: "शेर", transliteration: "Sher", meaning: "Lion", emoji: "🦁", syllables: ["शे", "र"] },
+      { word: "शलजम", transliteration: "Shaljam", meaning: "Turnip", emoji: "🥗", syllables: ["श", "ल", "ज", "म"] },
+      { word: "शहद", transliteration: "Shahad", meaning: "Honey", emoji: "🍯", syllables: ["श", "ह", "द"] }
+    ],
+    sentences: [
+      { sentence: "शेर को जंगल का पराक्रमी राजा कहा जाता है।", transliteration: "Sher jungle ka raja hai.", meaning: "The lion is known as the valiant king of the jungle." },
+      { sentence: "प्राकृतिक शहद बहुत मीठा और गुणकारी होता है।", transliteration: "Shahad meetha hota hai.", meaning: "Natural honey is very sweet and wholesome." }
+    ]
+  },
+  sha_retro: {
+    words: [
+      { word: "षट्कोण", transliteration: "Shatkon", meaning: "Hexagon", emoji: "🔷", syllables: ["ष", "ट्", "को", "ण"] },
+      { word: "षडानन", transliteration: "Shadaanana", meaning: "Lord Kartikeya", emoji: "🪷", syllables: ["ष", "डा", "न", "न"] }
+    ],
+    sentences: [
+      { sentence: "षट्कोण ज्यामिति में छह भुजाओं वाली आकृति होती है।", transliteration: "Shatkon mein chhah bhujaen hoti hain.", meaning: "A hexagon is a geometrical shape with six equal sides." }
+    ]
+  },
+  sa: {
+    words: [
+      { word: "सेब", transliteration: "Seb", meaning: "Apple", emoji: "🍎", syllables: ["से", "ब"] },
+      { word: "सूरज", transliteration: "Sooraj", meaning: "Sun", emoji: "☀️", syllables: ["सू", "र", "ज"] },
+      { word: "सड़क", transliteration: "Sadak", meaning: "Road", emoji: "🛣️", syllables: ["स", "ड़", "क"] }
+    ],
+    sentences: [
+      { sentence: "सुबह पूर्व दिशा से चमकता हुआ सूरज निकलता है।", transliteration: "Sooraj nikalta hai.", meaning: "The shining sun rises from the eastern horizon in the morning." },
+      { sentence: "मीठा सेब सेहत के लिए बहुत लाभकारी फल है।", transliteration: "Seb laabhkaari hai.", meaning: "Sweet apple is a tremendously beneficial fruit for health." }
+    ]
+  },
+  ha: {
+    words: [
+      { word: "हाथी", transliteration: "Haathi", meaning: "Elephant", emoji: "🐘", syllables: ["हा", "थी"] },
+      { word: "हाथ", transliteration: "Haath", meaning: "Hand", emoji: "✋", syllables: ["हा", "थ"] },
+      { word: "हवा", transliteration: "Hawa", meaning: "Breeze", emoji: "💨", syllables: ["ह", "वा"] }
+    ],
+    sentences: [
+      { sentence: "विशाल हाथी अपनी सूंड हिलाते हुए झूमकर चलता है।", transliteration: "Haathi chalta hai.", meaning: "The majestic elephant walks swaying its long trunk." },
+      { sentence: "सवेरे की ताज़ी हवा में टहलने से मन प्रसन्न होता है।", transliteration: "Hawa mein tahalna accha hai.", meaning: "Strolling in the morning's fresh breeze fills the heart with joy." }
+    ]
+  }
+};
+
+function getPhonemeVocabulary(phoneme) {
+  if (!phoneme) return { words: [], sentences: [] };
+  const custom = HINDI_VOCABULARY_BANK[phoneme.id];
+  if (custom && custom.words && custom.words.length > 0) {
+    return custom;
+  }
+  return {
+    words: [phoneme.wordLevel],
+    sentences: [phoneme.sentenceLevel]
+  };
+}
+
+window.getAllPhonemes = getAllPhonemes;
+window.getPhonemeById = getPhonemeById;
+window.getPhonemeVocabulary = getPhonemeVocabulary;

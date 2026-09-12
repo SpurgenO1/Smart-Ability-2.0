@@ -12,14 +12,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/duolingo-theme.css?v=6">
-  <link rel="stylesheet" href="css/hero-landing.css?v=6">
-  <link rel="stylesheet" href="css/student-portal.css?v=6">
-  <link rel="stylesheet" href="css/therapist-portal.css?v=6">
-  <link rel="stylesheet" href="css/parent-portal.css?v=6">
-  <link rel="stylesheet" href="css/settings-panel.css?v=6">
+  <link rel="stylesheet" href="css/duolingo-theme.css?v=8">
+  <link rel="stylesheet" href="css/hero-landing.css?v=8">
+  <link rel="stylesheet" href="css/student-portal.css?v=8">
+  <link rel="stylesheet" href="css/therapist-portal.css?v=8">
+  <link rel="stylesheet" href="css/parent-portal.css?v=8">
+  <link rel="stylesheet" href="css/settings-panel.css?v=8">
 
-  <link rel="stylesheet" href="css/clinical-features.css?v=6">
+  <link rel="stylesheet" href="css/clinical-features.css?v=8">
 </head>
 <body>
 
@@ -518,19 +518,86 @@
               </div>
             </div>
 
-            <!-- Prominent Letter & Object Pairing -->
-            <div class="target-display-hero">
-              <div class="target-hero-letter" id="target-hero-letter">क</div>
-              <div class="target-hero-object">
-                <span class="target-hero-emoji" id="target-hero-emoji">🕊️</span>
-                <span class="target-hero-word" id="target-hero-word">कबूतर</span>
-                <span class="target-hero-translit" id="target-hero-translit">(Kabootar - "Pigeon")</span>
+            <!-- Dynamic Practice Stage Hero: Dedicated Views for Level 1 (Sound), Level 2 (Word), Level 3 (Sentence) -->
+            <div class="target-display-hero" id="practice-stage-hero">
+
+              <!-- LEVEL 1 PANE: ISOLATED SOUND -->
+              <div class="level-stage-pane active" id="pane-level-sound">
+                <div class="stage-level-tag sound">
+                  <span>🔊</span>
+                  <span>Level 1: Isolated Sound Practice (+20 🔮)</span>
+                </div>
+                <div class="sound-giant-hero-letter" id="sound-target-letter">क</div>
+                <div class="sound-ipa-ribbon">
+                  <span class="sound-ipa-tag" id="sound-target-ipa">/k/ • Velar Stop</span>
+                </div>
+                <div class="sound-pediatric-guide-card">
+                  <div class="guide-icon">🦁</div>
+                  <div class="guide-text" id="sound-pediatric-text">Soft gentle breath! Say isolated sound clearly.</div>
+                </div>
               </div>
-              <!-- Sentence Level Hero Box -->
-              <div class="sentence-hero-box" id="sentence-hero-box">
-                <div class="sentence-hero-text" id="sentence-hero-text">कबूतर दाना चुगता है।</div>
-                <div class="sentence-hero-meaning" id="sentence-hero-meaning">"The pigeon is pecking at grains."</div>
+
+              <!-- LEVEL 2 PANE: WORD LEVEL WITH MULTI-WORD VOCABULARY BANK -->
+              <div class="level-stage-pane" id="pane-level-word">
+                <div class="stage-level-tag word">
+                  <span>📦</span>
+                  <span>Level 2: Word Articulation Practice (+35 🔮)</span>
+                </div>
+                <div class="target-phoneme-reminder">
+                  <span>Practicing Target Sound:</span>
+                  <strong id="word-stage-phoneme-badge">क</strong>
+                </div>
+
+                <!-- Word Hero Display -->
+                <div class="word-hero-card">
+                  <span class="word-giant-emoji" id="word-target-emoji">🕊️</span>
+                  <div class="word-text-group">
+                    <div class="word-giant-title" id="word-target-title">कबूतर</div>
+                    <div class="word-sub-meaning" id="word-target-meaning">Kabootar — "Pigeon"</div>
+                  </div>
+                </div>
+
+                <!-- Interactive Word Bank Selector -->
+                <div class="word-bank-wrap">
+                  <div class="word-bank-header">
+                    <span>📚 Select Word to Practice:</span>
+                  </div>
+                  <div class="word-bank-chips-row" id="word-bank-chips-row">
+                    <!-- Populated dynamically: [🕊️ कबूतर] [🪷 कमल] [📖 किताब] -->
+                  </div>
+                </div>
               </div>
+
+              <!-- LEVEL 3 PANE: FULL CARRIER SENTENCE LEVEL -->
+              <div class="level-stage-pane" id="pane-level-sentence">
+                <div class="stage-level-tag sentence">
+                  <span>💬</span>
+                  <span>Level 3: Carrier Sentence Practice (+50 🔮)</span>
+                </div>
+                <div class="target-phoneme-reminder">
+                  <span>Target Sound in Sentence:</span>
+                  <strong id="sentence-stage-phoneme-badge">क</strong>
+                </div>
+
+                <!-- Sentence Hero Speech Card -->
+                <div class="sentence-giant-card">
+                  <div class="sentence-card-quote-mark">“</div>
+                  <div class="sentence-giant-quote" id="sentence-target-quote">कबूतर दाना चुगता है।</div>
+                  <div class="sentence-translit-quote" id="sentence-target-translit">Kabootar daana chugta hai.</div>
+                  <div class="sentence-meaning-quote" id="sentence-target-meaning">"The pigeon is pecking at grains."</div>
+                </div>
+
+                <!-- Interactive Sentence Bank Selector -->
+                <div class="sentence-variations-wrap">
+                  <div class="sentence-bank-header">
+                    <span>💬 Choose Sentence to Practice:</span>
+                  </div>
+                  <div class="sentence-chips-row" id="sentence-chips-row">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <!-- Slow-Paced Cadence Audio Engine Bar -->
@@ -565,7 +632,7 @@
                   🎤
                 </button>
               </div>
-              <p style="font-size: 13px; font-weight: 800; color: #78350f;">
+              <p id="mic-action-prompt" style="font-size: 14px; font-weight: 800; color: #78350f;">
                 Tap microphone, speak target clearly, and earn Memory Orbs!
               </p>
 
@@ -1403,27 +1470,27 @@
 
   <!-- External Libraries & Engines -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="js/api-client.js?v=7"></script>
-  <script src="js/socket-client.js?v=7"></script>
+  <script src="js/api-client.js?v=8"></script>
+  <script src="js/socket-client.js?v=8"></script>
 
   <!-- Core Knowledge & Engines -->
-  <script src="js/phoneme-data.js?v=7"></script>
-  <script src="js/articulatory-kb.js?v=7"></script>
-  <script src="js/root-cause-engine.js?v=7"></script>
-  <script src="js/audio-sfx.js?v=7"></script>
-  <script src="js/speech-engine.js?v=7"></script>
-  <script src="js/audio-feature-engine.js?v=7"></script>
-  <script src="js/cv-engine.js?v=7"></script>
-  <script src="js/chatbot.js?v=7"></script>
-  <script src="js/regulation-break.js?v=7"></script>
+  <script src="js/phoneme-data.js?v=8"></script>
+  <script src="js/articulatory-kb.js?v=8"></script>
+  <script src="js/root-cause-engine.js?v=8"></script>
+  <script src="js/audio-sfx.js?v=8"></script>
+  <script src="js/speech-engine.js?v=8"></script>
+  <script src="js/audio-feature-engine.js?v=8"></script>
+  <script src="js/cv-engine.js?v=8"></script>
+  <script src="js/chatbot.js?v=8"></script>
+  <script src="js/regulation-break.js?v=8"></script>
 
   <!-- View Controllers -->
-  <script src="js/student-view.js?v=7"></script>
-  <script src="js/therapist-view.js?v=7"></script>
-  <script src="js/parent-view.js?v=7"></script>
-  <script src="js/hero-controller.js?v=7"></script>
-  <script src="js/settings-controller.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/student-view.js?v=8"></script>
+  <script src="js/therapist-view.js?v=8"></script>
+  <script src="js/parent-view.js?v=8"></script>
+  <script src="js/hero-controller.js?v=8"></script>
+  <script src="js/settings-controller.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 
 </body>
 </html>
