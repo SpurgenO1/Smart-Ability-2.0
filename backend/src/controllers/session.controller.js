@@ -78,9 +78,9 @@ const pushContent = asyncHandler(async (req, res) => {
 
   const resolvedPhonemeId = phonemeId || content.phoneme_id;
   const contentUrl = content.video_url
-    ? storage.generatePlaybackUrl(content.video_url)
+    ? storage.publicMediaUrl(content.video_url)
     : content.model_url
-    ? storage.generatePlaybackUrl(content.model_url)
+    ? storage.publicMediaUrl(content.model_url)
     : null;
 
   emitToRoom(roomFor('student', session.student_id), 'CONTENT_PUSHED', {

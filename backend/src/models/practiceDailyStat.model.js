@@ -13,20 +13,19 @@ module.exports = {
   },
   async incrementForToday(studentId, { sessions = 0, attempts = 0 }) {
     const today = new Date().toISOString().slice(0, 10);
-    const existing = await db(TABLE).where({ student_id: studentId, date: today }).first();
-    if (existing) {
-      return db(TABLE)
-        .where({ id: existing.id })
-        .update({
-          sessions: existing.sessions + sessions,
-          attempts: existing.attempts + attempts,
-        })
-        .returning('*')
-        .then((rows) => rows[0]);
-    }
-    return db(TABLE)
+    // Atomic upsert: two concurrent attempts for the same student on the
+    // same day both increment relative to the row's current value in a
+    // single statement, instead of read-then-write in JS which can lose an
+    // update under concurrency (last writer wins, overwriting the other's
+    // increment).
+    const rows = await db(TABLE)
       .insert({ student_id: studentId, date: today, sessions, attempts })
-      .returning('*')
-      .then((rows) => rows[0]);
+      .onConflict(['student_id', 'date'])
+      .merge({
+        sessions: db.raw('?? + ?', [`${TABLE}.sessions`, sessions]),
+        attempts: db.raw('?? + ?', [`${TABLE}.attempts`, attempts]),
+      })
+      .returning('*');
+    return rows[0];
   },
 };

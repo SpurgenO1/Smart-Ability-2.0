@@ -145,7 +145,7 @@ const getStudentDemonstrations = asyncHandler(async (req, res) => {
       phonemeId: u.phoneme_id,
       phonemeCharacter: u.phoneme_character,
       phonemeName: u.phoneme_name,
-      videoUrl: u.video_url ? storage.generatePlaybackUrl(u.video_url) : null,
+      videoUrl: u.video_url ? storage.publicMediaUrl(u.video_url) : null,
       unlockedAt: u.unlocked_at,
     })),
   });

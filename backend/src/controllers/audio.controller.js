@@ -32,6 +32,11 @@ const requestUploadUrl = asyncHandler(async (req, res) => {
     channels: channels || null,
     size_bytes: null,
     original_filename: fileName || null,
+    // Only students ever record practice audio (enforced by requireRole on
+    // this route) - tagging the owner up front is what lets completeUpload
+    // and any future playback endpoint enforce ownership like every other
+    // student-scoped resource in this API.
+    student_id: req.roleEntity.id,
   });
 
   const { uploadUrl, expiresIn } = storage.generateUploadUrl(fileId);
@@ -61,6 +66,31 @@ const uploadRaw = asyncHandler(async (req, res) => {
   return success(res, { fileId, sizeBytes: bodyBuffer.length });
 });
 
+// GET counterpart of the signed URL scheme above - same trust model as a
+// presigned S3/GCS GET (the HMAC signature is the authorization, not a
+// Bearer token), since a playback URL has to be embeddable directly in an
+// <audio>/<video> src without attaching custom headers.
+const downloadRaw = asyncHandler(async (req, res) => {
+  const { fileId } = req.params;
+  const { expires, sig } = req.query;
+
+  if (!storage.verifySignature(fileId, expires, sig)) {
+    throw new ApiError('FILE_UPLOAD_FAILED', 'Invalid or expired playback URL');
+  }
+
+  const audioFile = await audioFileModel.findByFileId(fileId);
+  if (!audioFile) {
+    throw new ApiError('FILE_UPLOAD_FAILED', 'Unknown fileId');
+  }
+
+  const filePath = path.join(UPLOAD_DIR, fileId);
+  if (!fs.existsSync(filePath)) {
+    throw new ApiError('FILE_UPLOAD_FAILED', 'Audio has not finished uploading yet');
+  }
+
+  res.sendFile(filePath);
+});
+
 const completeUpload = asyncHandler(async (req, res) => {
   // `audioId` is accepted as an alias of `fileId`.
   const fileId = req.body.fileId || req.body.audioId;
@@ -71,10 +101,17 @@ const completeUpload = asyncHandler(async (req, res) => {
     throw new ApiError('FILE_UPLOAD_FAILED', 'Unknown fileId');
   }
 
+  // The file itself must belong to the caller - this is the check every
+  // other student-scoped resource in this API gets via requireStudentAccess;
+  // audio_files has no route-level ownership middleware, so it's done here.
+  if (!req.roleEntity || audioFile.student_id !== req.roleEntity.id) {
+    throw new ApiError('FORBIDDEN_RESOURCE', 'You may only complete your own audio upload');
+  }
+
   if (sessionId) {
     const session = await practiceSessionModel.findById(sessionId);
     if (!session) throw new ApiError('SESSION_NOT_FOUND', 'Practice session not found');
-    if (req.user.role === 'student' && (!req.roleEntity || req.roleEntity.id !== session.student_id)) {
+    if (req.roleEntity.id !== session.student_id) {
       throw new ApiError('FORBIDDEN_RESOURCE', 'You may only attach audio to your own session');
     }
   }
@@ -98,4 +135,4 @@ const completeUpload = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { requestUploadUrl, uploadRaw, completeUpload };
+module.exports = { requestUploadUrl, uploadRaw, downloadRaw, completeUpload };

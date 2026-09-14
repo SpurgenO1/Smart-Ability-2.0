@@ -342,6 +342,30 @@ paths:
         '201': { description: Created }
         '404': { $ref: '#/components/responses/Error' }
 
+  /alerts/{alertId}/reject:
+    post:
+      summary: >
+        Dismiss a struggle alert without unlocking content, recommending
+        live in-person/telepractice coaching instead. `sendNotification`
+        (default true) controls whether a notification record is created
+        for the student.
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+                sendNotification: { type: boolean, default: true }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/Error' }
+
   /sessions:
     post:
       summary: Create a live therapist-led session slot (therapist only)

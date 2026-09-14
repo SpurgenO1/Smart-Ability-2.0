@@ -66,7 +66,7 @@ const rejectAlert = asyncHandler(async (req, res) => {
     sendNotification,
   });
 
-  await auditService.record(req.user.id, auditService.ACTIONS.ALERT_DISMISS || 'ALERT_DISMISS', alert.id);
+  await auditService.record(req.user.id, auditService.ACTIONS.ALERT_DISMISS, alert.id);
 
   return success(
     res,

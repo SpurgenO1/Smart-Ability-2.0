@@ -969,7 +969,7 @@
           </div>
 
           <div class="clinical-studio-stage">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; flex-wrap: wrap;">
               <div>
                 <h3 style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="studio-current-phoneme-title">
                   क - Ka (/k/)
@@ -977,6 +977,12 @@
                 <p style="font-size: 13px; font-weight: 700; color: #0284c7;" id="studio-pediatric-cue-text">
                   Dragon cough! Tap back of tongue to soft palate.
                 </p>
+              </div>
+              <div>
+                <label for="studio-student-select" style="display: block; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Active Student (Backend)</label>
+                <select id="studio-student-select" class="auth-input-field" style="padding: 8px 10px; font-size: 13px;">
+                  <option value="">No assigned students loaded</option>
+                </select>
               </div>
             </div>
 
@@ -1028,6 +1034,23 @@
                 </div>
                 <button class="btn-duo btn-coral" id="btn-push-to-student" onclick="window.therapistController.pushCurrentVideoToStudent();" style="padding: 10px 18px; font-size: 13px;">
                   📡 Push Video Demonstration to Student
+                </button>
+              </div>
+            </div>
+
+            <!-- Clinical Session Note (persisted to backend via /sessions/:id/notes) -->
+            <div class="studio-diagnostics-panel" style="margin-top: 18px;">
+              <h4 style="font-size: 15px; font-weight: 900; color: var(--text-main, #0f172a); margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                <span>📝</span> Clinical Session Note
+              </h4>
+              <textarea id="studio-notes-text" class="auth-input-field" rows="3" placeholder="e.g. Child showed improved posterior tongue elevation on 3/5 trials..." style="width: 100%; resize: vertical; margin-bottom: 10px;"></textarea>
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <label style="font-size: 12px; font-weight: 700; color: #64748b; display: flex; align-items: center; gap: 6px;">
+                  Session score (0-100):
+                  <input type="number" id="studio-notes-score" min="0" max="100" style="width: 70px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                </label>
+                <button class="btn-duo btn-blue" id="btn-save-studio-notes" onclick="window.therapistController.saveStudioNote();" style="padding: 10px 18px; font-size: 13px;">
+                  💾 Save Clinical Note
                 </button>
               </div>
             </div>

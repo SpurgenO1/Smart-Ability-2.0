@@ -3,6 +3,21 @@
 const { resetDatabase, db } = require('./setup');
 const { request, app, registerAndLogin, authHeader } = require('./helpers');
 
+async function uploadAudio(student, bytes = 'fake-audio-bytes') {
+  const urlRes = await request(app)
+    .post('/api/v1/audio/upload-url')
+    .set(authHeader(student.accessToken))
+    .send({ format: 'wav' });
+  const { uploadUrl, fileId } = urlRes.body.data;
+
+  await request(app)
+    .put(uploadUrl)
+    .set('Content-Type', 'application/octet-stream')
+    .send(Buffer.from(bytes));
+
+  return { fileId, uploadUrl };
+}
+
 describe('audio upload (2-step signed URL flow)', () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -57,5 +72,42 @@ describe('audio upload (2-step signed URL flow)', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('FILE_UPLOAD_FAILED');
+  });
+
+  test('the signed GET playback URL returns the uploaded bytes', async () => {
+    const student = await registerAndLogin('student');
+    const { fileId, uploadUrl } = await uploadAudio(student, 'playable-bytes');
+
+    const downloadRes = await request(app).get(uploadUrl);
+
+    expect(downloadRes.status).toBe(200);
+    expect(downloadRes.body).toEqual(Buffer.from('playable-bytes'));
+  });
+
+  test('a non-student cannot request an audio upload URL', async () => {
+    const therapist = await registerAndLogin('therapist');
+
+    const res = await request(app)
+      .post('/api/v1/audio/upload-url')
+      .set(authHeader(therapist.accessToken))
+      .send({ format: 'wav' });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('a student cannot complete another student\'s audio upload', async () => {
+    const owner = await registerAndLogin('student');
+    const intruder = await registerAndLogin('student');
+    const { fileId } = await uploadAudio(owner);
+
+    const res = await request(app)
+      .post('/api/v1/audio/complete')
+      .set(authHeader(intruder.accessToken))
+      .send({ fileId });
+
+    expect(res.status).toBe(403);
+
+    const audioRow = await db('audio_files').where({ file_id: fileId }).first();
+    expect(audioRow.student_id).toBe(owner.roleEntity.id);
   });
 });

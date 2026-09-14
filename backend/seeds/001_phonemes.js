@@ -43,15 +43,20 @@ exports.seed = async function seed(knex) {
   await knex('phonemes').del();
   await knex('articulatory_features').del();
 
+  // NOTE: this project ships only a handful of generic demonstration videos
+  // under assets/videos/ (no per-phoneme audio clips or images exist yet).
+  // `image_url`/`normal_audio_url`/`slow_audio_url` are left null rather than
+  // pointing at content that was never produced - a null field the frontend
+  // can treat as "not yet available" is honest; a URL that always 404s is not.
   const rows = PHONEMES.map((p) => ({
     character: p.character,
     name: p.name,
     category: p.category,
     example_word: p.example_word,
     example_meaning: p.example_meaning,
-    normal_audio_url: `phonemes/${p.name}/normal.mp3`,
-    slow_audio_url: `phonemes/${p.name}/slow.mp3`,
-    image_url: `images/${p.image}`,
+    normal_audio_url: null,
+    slow_audio_url: null,
+    image_url: null,
     place_of_articulation: p.place,
     active: true,
   }));
@@ -110,11 +115,17 @@ exports.seed = async function seed(knex) {
   }
   await knex('phoneme_features').insert(links);
 
-  const contentRows = phonemeRows.map((p) => ({
+  // Same reasoning as above for model_url/animation_url (no .glb or mouth-
+  // animation assets exist). video_url does have real, playable content: the
+  // 5 generic demonstration clips shipped in assets/videos/, cycled across
+  // every phoneme so "unlock content" / "push content" always resolves to a
+  // real file served from the /media static mount.
+  const DEMO_VIDEOS = ['vowel_1.mp4', 'vowel_2.mp4', 'vowel_3.mp4', 'asha.mp4', 'krishna.mp4'];
+  const contentRows = phonemeRows.map((p, i) => ({
     phoneme_id: p.id,
-    model_url: `content/${p.name}/model.glb`,
-    animation_url: `content/${p.name}/mouth-animation.mp4`,
-    video_url: `content/${p.name}/tutorial.mp4`,
+    model_url: null,
+    animation_url: null,
+    video_url: DEMO_VIDEOS[i % DEMO_VIDEOS.length],
   }));
   await knex('three_d_content').insert(contentRows);
 };

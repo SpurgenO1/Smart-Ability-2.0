@@ -13,6 +13,13 @@ class TherapistViewController {
     this.demoFilter = 'all';
     this.demoSearchQuery = '';
 
+    // Real backend data (populated from the API once authenticated - see
+    // fetchBackendStudents/fetchBackendAlerts). Distinct from `this.roster`,
+    // which stays local demo/cosmetic schedule data.
+    this.backendStudents = [];
+    this.studioBackendStudentId = null;
+    this.activeBackendSessionByStudent = {};
+
     // Daily appointments roster
     this.roster = [
       { id: 1, time: "09:30 AM", duration: "45m", student: "Aarav Sharma", age: "6 yrs", targetPhoneme: "ka", status: "struggling", statusLabel: "5-Failure Alert" },
@@ -31,6 +38,7 @@ class TherapistViewController {
     this.renderPhonemePalette();
     this.setupEventListeners();
     this.fetchBackendAlerts();
+    this.fetchBackendStudents();
   }
 
   async fetchBackendAlerts() {
@@ -44,6 +52,11 @@ class TherapistViewController {
             if (!exists) {
               window.appState.struggleAlerts.unshift({
                 id: a.id,
+                // Real backend student row id - needed so Studio actions
+                // (push content, save notes) triggered from this alert can
+                // address the actual student instead of falling back to
+                // whatever's first in the local roster.
+                studentId: a.studentId,
                 studentName: a.studentName || 'Aarav Sharma',
                 phonemeId: a.phonemeId || 'ka',
                 phonemeSymbol: a.phoneme || 'क',
@@ -59,6 +72,46 @@ class TherapistViewController {
       } catch (err) {
         console.warn('[TherapistView] Backend alerts note:', err.message || err);
       }
+    }
+  }
+
+  /**
+   * Loads the therapist's real assigned students so Studio actions (push
+   * content, save clinical notes) can target an actual backend student
+   * instead of the hardcoded hero-controller-only session, and populates the
+   * Studio's "Active Student" selector.
+   */
+  async fetchBackendStudents() {
+    if (!(window.apiClient && window.apiClient.isAuthenticated() && window.apiClient.currentUser?.role === 'therapist')) {
+      return;
+    }
+    try {
+      const res = await window.apiClient.getStudents();
+      this.backendStudents = res?.students || (Array.isArray(res) ? res : []);
+      this.populateStudioStudentSelect();
+    } catch (err) {
+      console.warn('[TherapistView] Backend students note:', err.message || err);
+    }
+  }
+
+  populateStudioStudentSelect() {
+    const select = document.getElementById('studio-student-select');
+    if (!select) return;
+
+    if (!this.backendStudents.length) {
+      select.innerHTML = '<option value="">No assigned students loaded</option>';
+      return;
+    }
+
+    select.innerHTML = this.backendStudents
+      .map(s => `<option value="${s.id}">${s.displayName}${s.age != null ? ` (${s.age} yrs)` : ''}</option>`)
+      .join('');
+
+    if (this.studioBackendStudentId && this.backendStudents.some(s => s.id === this.studioBackendStudentId)) {
+      select.value = String(this.studioBackendStudentId);
+    } else {
+      this.studioBackendStudentId = this.backendStudents[0].id;
+      select.value = String(this.studioBackendStudentId);
     }
   }
 
@@ -152,6 +205,14 @@ class TherapistViewController {
     if (pushBtn) {
       pushBtn.addEventListener('click', () => {
         this.pushCurrentVideoToStudent();
+      });
+    }
+
+    // Studio's real-student selector
+    const studioStudentSelect = document.getElementById('studio-student-select');
+    if (studioStudentSelect) {
+      studioStudentSelect.addEventListener('change', (e) => {
+        this.studioBackendStudentId = e.target.value ? Number(e.target.value) : null;
       });
     }
   }
@@ -272,7 +333,7 @@ class TherapistViewController {
         <button class="btn-duo btn-coral" id="btn-open-demo-queue" onclick="window.therapistController.switchSubView('demonstrations'); window.soundSFX?.playPop();">
           🎬 Review & Push Video (${pendingAlerts.length})
         </button>
-        <button class="btn-duo btn-ghost" onclick="window.therapistController.openStudioForPhoneme('${first.phonemeId}')">
+        <button class="btn-duo btn-ghost" onclick="window.therapistController.openStudioForPhoneme('${first.phonemeId}', ${first.studentId ?? 'null'})">
           🔬 Open Studio
         </button>
       </div>
@@ -422,27 +483,27 @@ class TherapistViewController {
 
             <div class="demo-action-buttons-row">
               ${isPending ? `
-                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id})">
+                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id}, '', event)">
                   ✅ Approve & Push Video
                 </button>
-                <button class="btn-demo-action btn-reject" onclick="window.therapistController.rejectStudentDemonstration(${alert.id})">
+                <button class="btn-demo-action btn-reject" onclick="window.therapistController.rejectStudentDemonstration(${alert.id}, '', event)">
                   ❌ Reject Push
                 </button>
-                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')" title="Preview in Live Studio">
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}', ${typeof alert.studentId === 'number' ? alert.studentId : 'null'})" title="Preview in Live Studio">
                   🔬 Studio
                 </button>
               ` : isApproved ? `
-                <button class="btn-demo-action btn-revoke" onclick="window.therapistController.rejectStudentDemonstration(${alert.id}, 'Approval revoked by clinician.')">
+                <button class="btn-demo-action btn-revoke" onclick="window.therapistController.rejectStudentDemonstration(${alert.id}, 'Approval revoked by clinician.', event)">
                   ↩️ Revoke Video Push
                 </button>
-                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')">
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}', ${typeof alert.studentId === 'number' ? alert.studentId : 'null'})">
                   🔬 Studio
                 </button>
               ` : `
-                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id})">
+                <button class="btn-demo-action btn-approve" onclick="window.therapistController.approveStudentDemonstration(${alert.id}, '', event)">
                   ✅ Re-evaluate & Approve Push
                 </button>
-                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}')">
+                <button class="btn-demo-action btn-studio-link" onclick="window.therapistController.openStudioForPhoneme('${alert.phonemeId}', ${typeof alert.studentId === 'number' ? alert.studentId : 'null'})">
                   🔬 Studio
                 </button>
               `}
@@ -458,36 +519,54 @@ class TherapistViewController {
   /**
    * One-Click Video Demonstration Push / Unlock Action (From schedule drawer or push list)
    */
-  async approveStudentDemonstration(alertId, customVideoUrl = '') {
+  async approveStudentDemonstration(alertId, customVideoUrl = '', evt = null) {
+    const btn = evt?.currentTarget;
+    if (btn) btn.disabled = true;
+
+    let backendOk = false;
     if (window.apiClient && window.apiClient.isAuthenticated()) {
       try {
         await window.apiClient.unlockContent(alertId, { sendNotification: true });
         console.log('✅ Demonstration video unlocked on backend for alert:', alertId);
+        backendOk = true;
       } catch (err) {
-        console.warn('[TherapistView] Backend unlock fallback to local:', err.message || err);
+        console.warn('[TherapistView] Backend unlock note:', err.message || err);
       }
     }
 
     window.appState.approveDemonstrationPush(alertId, customVideoUrl);
+    if (!backendOk && window.appState) {
+      window.appState.showToast('⚠️ Shown Locally Only', 'Could not confirm the unlock with the server - it may not be visible to the student yet.', 'alert');
+    }
     this.renderDemonstrationPushList();
     this.renderStruggleAlerts();
+    if (btn) btn.disabled = false;
   }
 
-  async rejectStudentDemonstration(alertId, reason = '') {
+  async rejectStudentDemonstration(alertId, reason = '', evt = null) {
+    const btn = evt?.currentTarget;
+    if (btn) btn.disabled = true;
+
     const finalReason = reason || prompt("Enter clinical reason for rejecting video demonstration push:", "Requires tactile prompt & live placement guidance in next session.") || "Clinical in-person coaching recommended.";
 
+    let backendOk = false;
     if (window.apiClient && window.apiClient.isAuthenticated()) {
       try {
         await window.apiClient.rejectAlert(alertId, { reason: finalReason });
         console.log('✅ Demonstration push rejected on backend for alert:', alertId);
+        backendOk = true;
       } catch (err) {
-        console.warn('[TherapistView] Backend reject fallback to local:', err.message || err);
+        console.warn('[TherapistView] Backend reject note:', err.message || err);
       }
     }
 
     window.appState.rejectDemonstrationPush(alertId, finalReason);
+    if (!backendOk && window.appState) {
+      window.appState.showToast('⚠️ Shown Locally Only', 'Could not confirm the rejection with the server.', 'alert');
+    }
     this.renderDemonstrationPushList();
     this.renderStruggleAlerts();
+    if (btn) btn.disabled = false;
   }
 
   setDemoFilter(filter) {
@@ -521,8 +600,16 @@ class TherapistViewController {
     );
   }
 
-  openStudioForPhoneme(phonemeId) {
+  openStudioForPhoneme(phonemeId, studentId = null) {
     this.selectedPhoneme = getPhonemeById(phonemeId);
+    // studentId may be a legacy local-demo id (e.g. "ORB-4819") rather than a
+    // real backend row id - only adopt it when it's a genuine integer.
+    const numericStudentId = Number(studentId);
+    if (studentId != null && Number.isInteger(numericStudentId)) {
+      this.studioBackendStudentId = numericStudentId;
+      const select = document.getElementById('studio-student-select');
+      if (select) select.value = String(this.studioBackendStudentId);
+    }
     this.switchSubView('studio');
   }
 
@@ -648,6 +735,22 @@ class TherapistViewController {
     this.selectPhonemeInStudio(this.selectedPhoneme);
   }
 
+  /**
+   * A live therapy session (backend `therapy_sessions` row) is required
+   * before content can be pushed or a note saved for it - creates one and
+   * starts it the first time a given student is addressed from the Studio,
+   * then reuses it for subsequent pushes/notes in the same visit.
+   */
+  async ensureBackendSessionForStudent(studentId) {
+    if (this.activeBackendSessionByStudent[studentId]) {
+      return this.activeBackendSessionByStudent[studentId];
+    }
+    const created = await window.apiClient.createTherapySession(studentId);
+    const started = await window.apiClient.startTherapySession(created.sessionId);
+    this.activeBackendSessionByStudent[studentId] = started.sessionId;
+    return started.sessionId;
+  }
+
   async pushCurrentVideoToStudent() {
     window.soundSFX.playUnlockCheer();
 
@@ -656,11 +759,27 @@ class TherapistViewController {
       videoUrl = 'assets/videos/vowel_1.mp4';
     }
 
-    if (window.apiClient && window.apiClient.isAuthenticated()) {
+    const pushBtn = document.getElementById('btn-push-to-student');
+    if (pushBtn) pushBtn.disabled = true;
+
+    let backendOk = false;
+    if (window.apiClient && window.apiClient.isAuthenticated() && this.studioBackendStudentId) {
       try {
-        await window.apiClient.pushSessionContent(1, videoUrl, 'CLINICAL_VIDEO');
+        const phonemeBackendId = this.selectedPhoneme.backendId;
+        if (!phonemeBackendId) {
+          throw new Error('This phoneme has not synced a backend id yet - reload the page while signed in.');
+        }
+        const sessionId = await this.ensureBackendSessionForStudent(this.studioBackendStudentId);
+        const articulation = await window.apiClient.getArticulationContent(phonemeBackendId);
+        const contentId = articulation?.content?.id;
+        if (!contentId) {
+          throw new Error('No 3D content bundle exists for this phoneme yet.');
+        }
+        const pushed = await window.apiClient.pushSessionContent(sessionId, contentId, 'CLINICAL_VIDEO');
+        if (pushed?.contentUrl) videoUrl = pushed.contentUrl;
+        backendOk = true;
       } catch (e) {
-        console.warn('[TherapistView] Video push fallback:', e.message || e);
+        console.warn('[TherapistView] Video push note:', e.message || e);
       }
     }
 
@@ -674,11 +793,61 @@ class TherapistViewController {
 
     window.appState.unlockPhoneme3D(this.selectedPhoneme.id);
 
-    window.appState.showToast(
-      '📡 Clinical Demonstration Streamed',
-      `Authentic video demonstration for '${this.selectedPhoneme.symbol}' pushed to student practice room!`,
-      'unlock'
-    );
+    if (backendOk) {
+      window.appState.showToast(
+        '📡 Clinical Demonstration Streamed',
+        `Authentic video demonstration for '${this.selectedPhoneme.symbol}' pushed to student practice room!`,
+        'unlock'
+      );
+    } else {
+      window.appState.showToast(
+        '⚠️ Streamed Locally Only',
+        this.studioBackendStudentId
+          ? 'Could not confirm the push with the server - the student may not receive it if they are not connected right now.'
+          : 'No real assigned student selected above, so this could not be pushed to the backend.',
+        'alert'
+      );
+    }
+    if (pushBtn) pushBtn.disabled = false;
+  }
+
+  async saveStudioNote() {
+    const textEl = document.getElementById('studio-notes-text');
+    const scoreEl = document.getElementById('studio-notes-score');
+    const saveBtn = document.getElementById('btn-save-studio-notes');
+    const notes = textEl?.value.trim();
+
+    if (!notes) {
+      window.appState.showToast('✍️ Note Required', 'Write a clinical note before saving.', 'alert');
+      return;
+    }
+    if (!this.studioBackendStudentId) {
+      window.appState.showToast('⚠️ No Student Selected', 'Choose an assigned student above to save a note against.', 'alert');
+      return;
+    }
+    if (!(window.apiClient && window.apiClient.isAuthenticated())) {
+      window.appState.showToast('⚠️ Not Signed In', 'Sign in to save clinical notes to the backend.', 'alert');
+      return;
+    }
+
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      const sessionId = await this.ensureBackendSessionForStudent(this.studioBackendStudentId);
+      const score = scoreEl?.value !== '' ? Number(scoreEl.value) : null;
+      await window.apiClient.saveSessionNotes(sessionId, {
+        notes,
+        score,
+        targetPhoneme: this.selectedPhoneme.symbol,
+      });
+      window.appState.showToast('💾 Note Saved', 'Clinical session note saved to the student\'s record.', 'unlock');
+      if (textEl) textEl.value = '';
+      if (scoreEl) scoreEl.value = '';
+    } catch (err) {
+      console.warn('[TherapistView] Save note failed:', err.message || err);
+      window.appState.showToast('❌ Save Failed', err.message || 'Could not save this note to the server.', 'alert');
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
   }
 }
 

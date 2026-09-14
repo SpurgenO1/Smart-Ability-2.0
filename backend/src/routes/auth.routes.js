@@ -13,6 +13,9 @@ const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(8).max(255).required(),
   role: Joi.string().valid('therapist', 'student', 'parent').required(),
+  // Optional whole-number-of-years hint from the student registration form's
+  // "Learner Age" field; ignored for non-student roles.
+  age: Joi.number().integer().min(0).max(25).allow(null),
 });
 
 const loginSchema = Joi.object({

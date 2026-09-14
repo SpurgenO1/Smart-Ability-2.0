@@ -355,13 +355,18 @@ class HeroPageController {
         const name = document.getElementById('register-name')?.value.trim();
         const email = document.getElementById('register-email')?.value.trim();
         const pass = document.getElementById('register-password')?.value.trim();
+        // "Learner Age" is freeform text (e.g. "6 years old"); pull out the
+        // first number rather than discarding the field.
+        const extraRaw = document.getElementById('register-extra')?.value.trim() || '';
+        const ageMatch = extraRaw.match(/\d+/);
+        const age = this.selectedRole === 'student' && ageMatch ? Number(ageMatch[0]) : null;
 
         if (!name || !email || !pass) {
           alert('Please complete all required registration fields.');
           return;
         }
 
-        await this.completeRegistration(this.selectedRole, name, email, pass);
+        await this.completeRegistration(this.selectedRole, name, email, pass, age);
       });
     }
   }
@@ -383,10 +388,18 @@ class HeroPageController {
       } catch (apiErr) {
         console.warn('[HeroController] Backend authentication note:', apiErr);
 
-        const isDemo = Object.values(this.demoCredentials).some(c => c.identifier === identifier);
+        // Only fall back to a local "offline demo" session when either the
+        // backend is genuinely unreachable, or the credentials typed exactly
+        // match the published demo account (identifier AND password) - not
+        // merely because the identifier looks like a demo email. Otherwise a
+        // wrong password against aarav@speech.edu (etc.) would silently grant
+        // a full local session despite the backend correctly rejecting it.
+        const matchesDemoExactly = Object.values(this.demoCredentials).some(
+          c => c.identifier === identifier && c.password === password
+        );
         const isNetworkErr = apiErr.code === 'NETWORK_ERROR' || (apiErr.message && (apiErr.message.includes('connect to backend') || apiErr.message.includes('failed to fetch')));
 
-        if (isDemo || isNetworkErr) {
+        if (isNetworkErr || matchesDemoExactly) {
           if (window.appState) {
             window.appState.loginAs(role, identifier);
             this.closeAuthStage();
@@ -433,7 +446,7 @@ class HeroPageController {
     }
   }
 
-  async completeRegistration(role, name, email, password) {
+  async completeRegistration(role, name, email, password, age = null) {
     const btnSubmit = document.getElementById('btn-submit-register');
     const origText = btnSubmit ? btnSubmit.innerHTML : '';
     if (btnSubmit) btnSubmit.innerHTML = '<span>⏳</span> <span>Registering account...</span>';
@@ -445,7 +458,7 @@ class HeroPageController {
       }
 
       try {
-        const regRes = await window.apiClient.register({ name, email, password, role });
+        const regRes = await window.apiClient.register({ name, email, password, role, age });
         console.log('✅ Account registered in database:', regRes);
 
         // Immediately authenticate and obtain JWT Bearer tokens

@@ -15,8 +15,25 @@ const authConfig = require('../config/auth');
 const SALT_ROUNDS = 10;
 const VALID_ROLES = Object.values(authConfig.roles);
 
+async function loadProfile(user) {
+  if (user.role === authConfig.roles.STUDENT) return studentModel.findByUserId(user.id);
+  if (user.role === authConfig.roles.THERAPIST) return therapistModel.findByUserId(user.id);
+  if (user.role === authConfig.roles.PARENT) return parentModel.findByUserId(user.id);
+  return null;
+}
+
+// `age` is an optional whole-number-of-years hint collected on the student
+// registration form; there's no dedicated "age" column, so it's converted to
+// an approximate date_of_birth (day/month are not clinically meaningful here).
+function approximateDateOfBirthFromAge(age) {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear() - age, now.getUTCMonth(), now.getUTCDate()))
+    .toISOString()
+    .slice(0, 10);
+}
+
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, age } = req.body;
 
   if (!VALID_ROLES.includes(role)) {
     throw new ApiError('INVALID_ROLE', `role must be one of: ${VALID_ROLES.join(', ')}`);
@@ -38,7 +55,12 @@ const register = asyncHandler(async (req, res) => {
   });
 
   if (role === authConfig.roles.STUDENT) {
-    await studentModel.create({ user_id: user.id, display_name: name, profile_status: 'active' });
+    await studentModel.create({
+      user_id: user.id,
+      display_name: name,
+      profile_status: 'active',
+      date_of_birth: Number.isInteger(age) ? approximateDateOfBirthFromAge(age) : null,
+    });
   } else if (role === authConfig.roles.THERAPIST) {
     await therapistModel.create({ user_id: user.id });
   } else if (role === authConfig.roles.PARENT) {
@@ -70,10 +92,16 @@ const login = asyncHandler(async (req, res) => {
 
   await auditService.record(user.id, auditService.ACTIONS.LOGIN, user.id);
 
+  const profile = await loadProfile(user);
+
   return success(res, {
     accessToken,
     refreshToken,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    // `profileId` is the role-specific row id (students.id / therapists.id /
+    // parents.id) - distinct from `id` (the users table row). Every
+    // student/therapist/parent-scoped endpoint keys off the former, so the
+    // frontend needs it up front rather than guessing.
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, profileId: profile ? profile.id : null },
   });
 });
 

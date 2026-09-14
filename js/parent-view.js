@@ -18,6 +18,36 @@ class ParentViewController {
     this.setupEventListeners();
   }
 
+  /**
+   * Maps a real /students/:id/progress response onto the 5 Hindi grammar
+   * category buckets the progress-bar UI already renders, using the local
+   * phoneme catalog's `group` field to bucket each backend record by its
+   * character. Falls back to the (fabricated) default template only when
+   * there are no backend records at all, e.g. a brand new student.
+   */
+  buildProgressGroupsFromBackend(progressRecords) {
+    if (!progressRecords || !progressRecords.length || typeof getAllPhonemes !== 'function') return null;
+
+    const BUCKETS = [
+      { groups: ['swar'], name: 'Swar (Vowels / स्वर - अ to अः: 13 Sounds)', color: 'blue' },
+      { groups: ['kavarga', 'chavarga', 'tavarga_retro', 'tavarga_dental', 'pavarga'], name: 'Sparsh (Stops / स्पर्श - क to म: 25 Letters)', color: 'green' },
+      { groups: ['anthastha'], name: 'Anthastha (Approximants / अन्तःस्थ - य, र, ल, व)', color: 'blue' },
+      { groups: ['ushma'], name: 'Ushma & Glottal (ऊष्म व कण्ठ्य - श, ष, स, ह)', color: 'coral' },
+      { groups: ['blends'], name: 'Samyukt Blends (संयुक्ताक्षर - क्ष, त्र, ज्ञ, श्र)', color: 'green' },
+    ];
+
+    const masteryByCharacter = new Map(progressRecords.map(r => [r.phoneme, r.masteryStatus]));
+    const localPhonemes = getAllPhonemes('hindi');
+
+    return BUCKETS.map(bucket => {
+      const phonemesInBucket = localPhonemes.filter(p => bucket.groups.includes(p.group));
+      const total = phonemesInBucket.length;
+      const mastered = phonemesInBucket.filter(p => masteryByCharacter.get(p.symbol) === 'mastered').length;
+      const percent = total ? Math.round((mastered / total) * 100) : 0;
+      return { name: bucket.name, mastered: `${mastered} / ${total}`, percent, color: bucket.color };
+    });
+  }
+
   async loadChildData() {
     if (window.apiClient && window.apiClient.isAuthenticated() && window.apiClient.currentUser?.role === 'parent') {
       try {
@@ -25,27 +55,52 @@ class ParentViewController {
         const children = res?.children || (Array.isArray(res) ? res : []);
         if (children.length > 0) {
           const linkedIds = [];
-          children.forEach(c => {
+          for (const c of children) {
             const cid = `ORB-${c.id}`;
             linkedIds.push(cid);
+
+            // Real mastery data for this child - replaces the fabricated
+            // template's progressGroups/masteredCount rather than papering
+            // over it, so the parent portal reflects actual practice history.
+            let progressGroups = null;
+            let masteredCount = null;
+            try {
+              const progressRes = await window.apiClient.getStudentProgress(c.id);
+              progressGroups = this.buildProgressGroupsFromBackend(progressRes?.progress);
+              if (progressGroups) {
+                const totalMastered = progressGroups.reduce((sum, g) => sum + Number(g.mastered.split(' / ')[0]), 0);
+                const totalSounds = progressGroups.reduce((sum, g) => sum + Number(g.mastered.split(' / ')[1]), 0);
+                masteredCount = `${totalMastered} / ${totalSounds}`;
+              }
+            } catch (progressErr) {
+              console.warn('[ParentView] Backend progress fetch note:', progressErr.message || progressErr);
+            }
+
             if (!window.appState.studentsDirectory[cid]) {
+              const defaults = window.appState.getDefaultChildData() || {};
               window.appState.studentsDirectory[cid] = {
                 id: cid,
+                backendId: c.id,
                 name: c.displayName || c.name || `Learner ${c.id}`,
                 age: '6 years',
                 program: 'Pediatric Speech Retraining',
-                masteredCount: '13 / 18',
-                masteredSubtext: '↑ 3 sounds mastered this week',
+                masteredCount: masteredCount || '0 / 0',
+                masteredSubtext: masteredCount ? 'Based on live practice history' : 'No practice recorded yet',
                 streak: 12,
                 streakSubtext: 'Consistent home practice',
                 clinician: 'Dr. Ritu Nair (SLP)',
                 clinicianSubtext: 'SLP • Next Session Today 09:30 AM',
-                progressGroups: window.appState.getDefaultChildData()?.progressGroups || [],
-                appointments: window.appState.getDefaultChildData()?.appointments || [],
-                notes: window.appState.getDefaultChildData()?.notes || [],
+                // appointments/notes have no backend "list" endpoint yet
+                // (only single-note creation exists) - these stay local
+                // placeholders until that API surface exists.
+                progressGroups: progressGroups || defaults.progressGroups || [],
+                appointments: defaults.appointments || [],
+                notes: defaults.notes || [],
               };
+            } else if (progressGroups) {
+              Object.assign(window.appState.studentsDirectory[cid], { progressGroups, masteredCount, backendId: c.id });
             }
-          });
+          }
           window.appState.linkedChildrenIds = linkedIds;
           this.currentChildId = linkedIds[0];
           this.childData = window.appState.studentsDirectory[this.currentChildId];

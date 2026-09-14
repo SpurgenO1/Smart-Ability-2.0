@@ -37,6 +37,11 @@ async function createSession({ studentId, phonemeId, mode }) {
   const phoneme = await phonemeModel.findByIdActive(phonemeId);
   if (!phoneme) throw new ApiError('PHONEME_NOT_FOUND', 'Phoneme not found');
 
+  // Starting a new session while a previous one is still 'active' meant a
+  // student could accumulate unbounded concurrent active sessions (nothing
+  // ever transitioned them out of 'active'). Close out any stragglers first.
+  await practiceSessionModel.abandonActiveForStudent(studentId);
+
   const session = await practiceSessionModel.create({
     student_id: studentId,
     phoneme_id: phonemeId,

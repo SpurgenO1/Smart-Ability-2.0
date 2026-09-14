@@ -46,6 +46,21 @@ function verifySignature(fileId, expires, signature) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/**
+ * URL for a public, non-confidential teaching asset (phoneme demonstration
+ * video) that's part of the static content library rather than a per-user
+ * upload. These don't need expiring HMAC signatures - only genuine
+ * user-recorded audio (see generateUploadUrl/generatePlaybackUrl above) goes
+ * through that scheme. `key` may be a bare filename or a `dir/file` path;
+ * only the basename is used, since the content library is served flat out of
+ * /media (see app.js's static mount of assets/videos).
+ */
+function publicMediaUrl(key) {
+  if (!key) return null;
+  const basename = String(key).split('/').pop();
+  return `/media/${basename}`;
+}
+
 module.exports = {
   provider: process.env.STORAGE_PROVIDER || 'local',
   bucket: process.env.STORAGE_BUCKET || 'echoseed-audio',
@@ -53,4 +68,5 @@ module.exports = {
   generateUploadUrl,
   generatePlaybackUrl,
   verifySignature,
+  publicMediaUrl,
 };

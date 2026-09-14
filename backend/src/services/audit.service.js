@@ -11,6 +11,7 @@ const ACTIONS = {
   NOTE_CREATED: 'NOTE_CREATED',
   AUDIO_ACCESS: 'AUDIO_ACCESS',
   PROFILE_UPDATED: 'PROFILE_UPDATED',
+  ALERT_DISMISS: 'ALERT_DISMISS',
 };
 
 async function record(userId, action, resourceId) {

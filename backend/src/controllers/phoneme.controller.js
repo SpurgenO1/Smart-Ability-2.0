@@ -15,9 +15,11 @@ function toDto(phoneme) {
     placeOfArticulation: phoneme.place_of_articulation,
     exampleWord: phoneme.example_word,
     exampleMeaning: phoneme.example_meaning,
-    imageUrl: phoneme.image_url ? storage.generatePlaybackUrl(phoneme.image_url) : null,
-    normalAudioUrl: phoneme.normal_audio_url ? storage.generatePlaybackUrl(phoneme.normal_audio_url) : null,
-    slowAudioUrl: phoneme.slow_audio_url ? storage.generatePlaybackUrl(phoneme.slow_audio_url) : null,
+    // Static content-library assets (not user uploads) - same reasoning as
+    // three_d_content.video_url in getArticulationContent below.
+    imageUrl: phoneme.image_url ? storage.publicMediaUrl(phoneme.image_url) : null,
+    normalAudioUrl: phoneme.normal_audio_url ? storage.publicMediaUrl(phoneme.normal_audio_url) : null,
+    slowAudioUrl: phoneme.slow_audio_url ? storage.publicMediaUrl(phoneme.slow_audio_url) : null,
   };
 }
 
@@ -47,9 +49,9 @@ const getArticulationContent = asyncHandler(async (req, res) => {
     content: threeDContent
       ? {
           id: threeDContent.id,
-          modelUrl: threeDContent.model_url ? storage.generatePlaybackUrl(threeDContent.model_url) : null,
-          animationUrl: threeDContent.animation_url ? storage.generatePlaybackUrl(threeDContent.animation_url) : null,
-          videoUrl: threeDContent.video_url ? storage.generatePlaybackUrl(threeDContent.video_url) : null,
+          modelUrl: threeDContent.model_url ? storage.publicMediaUrl(threeDContent.model_url) : null,
+          animationUrl: threeDContent.animation_url ? storage.publicMediaUrl(threeDContent.animation_url) : null,
+          videoUrl: threeDContent.video_url ? storage.publicMediaUrl(threeDContent.video_url) : null,
         }
       : null,
   });

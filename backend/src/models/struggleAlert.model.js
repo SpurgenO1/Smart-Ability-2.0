@@ -16,11 +16,6 @@ module.exports = {
       .where({ student_id: studentId, phoneme_id: phonemeId, status: 'pending' })
       .first();
   },
-  listForTherapist(therapistId, { status } = {}) {
-    let q = db(TABLE).where({ therapist_id: therapistId });
-    if (status) q = q.andWhere({ status });
-    return q.orderBy('created_at', 'desc');
-  },
   /**
    * Same as listForTherapist but joined with the student's display name and
    * the phoneme's character - saves the caller an N+1 lookup when rendering

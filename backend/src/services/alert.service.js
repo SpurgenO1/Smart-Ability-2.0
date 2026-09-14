@@ -31,14 +31,27 @@ async function createAlertIfNeeded({ studentId, phonemeId, triggerAttemptId, fai
   }
   const therapistId = assignments[0].therapist_id;
 
-  const alert = await struggleAlertModel.create({
-    student_id: studentId,
-    therapist_id: therapistId,
-    phoneme_id: phonemeId,
-    trigger_attempt_id: triggerAttemptId,
-    failure_count: failureCount,
-    status: 'pending',
-  });
+  // The findPending check above and this insert aren't atomic, so two
+  // concurrent 5th-failure requests for the same student+phoneme can both
+  // pass the check. The unique(student_id, phoneme_id, status) constraint
+  // (migration 029) is the real guard; a violation here just means the other
+  // request won the race, which is the same outcome as findPending finding
+  // it first - fall through and return null instead of a 500.
+  let alert;
+  try {
+    alert = await struggleAlertModel.create({
+      student_id: studentId,
+      therapist_id: therapistId,
+      phoneme_id: phonemeId,
+      trigger_attempt_id: triggerAttemptId,
+      failure_count: failureCount,
+      status: 'pending',
+    });
+  } catch (err) {
+    const isUniqueViolation = err.code === '23505' || /unique|duplicate/i.test(err.message || '');
+    if (isUniqueViolation) return null;
+    throw err;
+  }
 
   emitToRoom(roomFor('student', studentId), 'STUDENT_FAILURE_THRESHOLD', {
     alertId: alert.id,
@@ -114,7 +127,7 @@ async function unlockContent({ alertId, therapistId, contentId, message, sendNot
   emitToRoom(roomFor('student', alert.student_id), 'THREE_D_UNLOCKED', {
     studentId: alert.student_id,
     phonemeId: alert.phoneme_id,
-    videoUrl: content.video_url ? storage.generatePlaybackUrl(content.video_url) : null,
+    videoUrl: content.video_url ? storage.publicMediaUrl(content.video_url) : null,
     unlockId: unlock.id,
     contentId: content.id,
   });

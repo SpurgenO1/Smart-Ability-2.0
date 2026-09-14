@@ -9,6 +9,7 @@ const {
   createPhoneme,
   authHeader,
 } = require('./helpers');
+const alertService = require('../src/services/alert.service');
 
 async function triggerFiveFailureAlert() {
   const therapist = await registerAndLogin('therapist');
@@ -138,5 +139,48 @@ describe('alerts + content unlock', () => {
       .set(authHeader(otherStudent.accessToken));
     expect(otherDemosRes.status).toBe(200);
     expect(otherDemosRes.body.data.demonstrations).toHaveLength(0);
+  });
+
+  test('two concurrent 5th-failure triggers for the same student+phoneme create exactly one alert', async () => {
+    const therapist = await registerAndLogin('therapist');
+    const student = await registerAndLogin('student');
+    await assignTherapistToStudent(therapist.roleEntity.id, student.roleEntity.id);
+    const phoneme = await createPhoneme();
+
+    const triggerAttempt = await db('practice_sessions')
+      .insert({ student_id: student.roleEntity.id, phoneme_id: phoneme.id, mode: 'self_practice', status: 'active' })
+      .returning('*')
+      .then(async ([session]) => {
+        const [attempt] = await db('practice_attempts')
+          .insert({
+            session_id: session.id,
+            student_id: student.roleEntity.id,
+            phoneme_id: phoneme.id,
+            attempt_number: 5,
+            result: 'fail',
+            consecutive_failure_count: 5,
+          })
+          .returning('*');
+        return attempt;
+      });
+
+    const args = {
+      studentId: student.roleEntity.id,
+      phonemeId: phoneme.id,
+      triggerAttemptId: triggerAttempt.id,
+      failureCount: 5,
+      phonemeCharacter: phoneme.character,
+    };
+
+    // Both calls race the same check-then-insert with no await between them;
+    // the unique(student_id, phoneme_id, status) constraint (migration 029)
+    // plus the catch in createAlertIfNeeded should let exactly one through
+    // and resolve the other to null, rather than one of them throwing/500ing.
+    const results = await Promise.all([alertService.createAlertIfNeeded(args), alertService.createAlertIfNeeded(args)]);
+
+    expect(results.filter((r) => r !== null)).toHaveLength(1);
+
+    const alerts = await db('struggle_alerts').where({ student_id: student.roleEntity.id, phoneme_id: phoneme.id });
+    expect(alerts).toHaveLength(1);
   });
 });

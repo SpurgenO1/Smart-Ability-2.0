@@ -259,9 +259,59 @@ class AppStateManager {
     if (modalId) modalId.textContent = id;
   }
 
-  loginAs(role, identifier = '') {
+  /**
+   * Captures the backend-issued role-entity id (students.id / therapists.id
+   * / parents.id, returned as `userData.profileId` by /auth/login and
+   * /auth/register+login) so real API calls can address "this logged-in
+   * user's own row" instead of a hardcoded placeholder. Also kicks off the
+   * local-phoneme <-> backend-phoneme id sync, which practice session/
+   * attempt calls need (see syncPhonemeBackendIds).
+   */
+  applyBackendProfile(role, userData) {
+    if (!userData) return;
+    if (role === 'student') this.activeStudentDbId = userData.profileId ?? this.activeStudentDbId ?? null;
+    else if (role === 'therapist') this.activeTherapistDbId = userData.profileId ?? this.activeTherapistDbId ?? null;
+    else if (role === 'parent') this.activeParentDbId = userData.profileId ?? this.activeParentDbId ?? null;
+
+    if (window.apiClient && window.apiClient.isAuthenticated()) {
+      this.syncPhonemeBackendIds();
+    }
+  }
+
+  /**
+   * Fetches the backend's phoneme catalog and stamps a `.backendId` onto
+   * each matching local phoneme record (matched by Devanagari character),
+   * so student-view.js can send real numeric phonemeIds to the practice
+   * session/attempt endpoints instead of a hardcoded fallback of 1.
+   */
+  async syncPhonemeBackendIds() {
+    if (this._phonemeSyncInFlight) return this._phonemeSyncInFlight;
+    this._phonemeSyncInFlight = (async () => {
+      try {
+        const res = await window.apiClient.getPhonemes();
+        const backendPhonemes = res?.phonemes || (Array.isArray(res) ? res : []);
+        if (!backendPhonemes.length) return;
+
+        const byCharacter = new Map(backendPhonemes.map((p) => [p.character, p.id]));
+        const localPhonemes = typeof getAllPhonemes === 'function' ? getAllPhonemes('hindi') : [];
+        localPhonemes.forEach((p) => {
+          if (byCharacter.has(p.symbol)) {
+            p.backendId = byCharacter.get(p.symbol);
+          }
+        });
+      } catch (err) {
+        console.warn('[AppState] Phoneme backend-id sync note:', err.message || err);
+      } finally {
+        this._phonemeSyncInFlight = null;
+      }
+    })();
+    return this._phonemeSyncInFlight;
+  }
+
+  loginAs(role, identifier = '', userData = null) {
     this.isLoggedIn = true;
     this.currentRole = role;
+    this.applyBackendProfile(role, userData);
 
     // Set default persona avatar if not customized
     if (role === 'therapist') this.userAvatar = '🩺';
@@ -329,9 +379,10 @@ class AppStateManager {
     if (window.soundSFX) window.soundSFX.playCorrect();
   }
 
-  registerAndLogin(role, name) {
+  registerAndLogin(role, name, userData = null) {
     this.isLoggedIn = true;
     this.currentRole = role;
+    this.applyBackendProfile(role, userData);
 
     // Show header session controls
     const sessionArea = document.getElementById('header-session-area');
@@ -965,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = window.apiClient.currentUser;
     const role = user?.role || 'student';
     console.log(`[App] Restoring authenticated ${role} session for ${user?.email || 'user'}`);
-    window.appState.loginAs(role);
+    window.appState.loginAs(role, user?.email || '', user);
     if (window.socketClient) {
       window.socketClient.connect();
     }

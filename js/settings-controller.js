@@ -204,10 +204,7 @@ class SettingsController {
     const exportBtn = document.getElementById('btn-export-daily-pdf');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        if (window.appState) {
-          window.appState.showToast('📄 Daily Report Exported', 'Progress summary downloaded as PDF!', 'unlock');
-        }
-        if (window.soundSFX) window.soundSFX.playCorrect();
+        this.exportDailyReport();
       });
     }
 
@@ -371,6 +368,80 @@ class SettingsController {
     // If there is an avatar badge on the header button, update it
     const headerAvatar = document.getElementById('header-user-avatar-badge');
     if (headerAvatar) headerAvatar.textContent = icon;
+  }
+
+  /**
+   * The button previously just showed a success toast without producing any
+   * file - actually build and download a real, self-contained printable HTML
+   * report from the same data renderEverydayReport() displays on screen, so
+   * "Download Summary PDF" isn't a no-op. (It's an .html file the browser's
+   * own print dialog can turn into a PDF via "Save as PDF" - that's what
+   * window.print() above already does for the on-screen view; this gives
+   * the user something they can actually save/attach/forward.)
+   */
+  exportDailyReport() {
+    const role = window.appState ? window.appState.currentRole : 'student';
+    const studentData = this.dailyReportsData[this.selectedStudentId] || this.dailyReportsData['ORB-4819'];
+    const reportDate = studentData[this.selectedReportDate] || studentData.today;
+
+    const phonemeRows = reportDate.phonemes
+      .map(
+        (p) => `<tr>
+          <td>${p.symbol} ${p.name}</td>
+          <td>${p.accuracy}</td>
+          <td>${p.trials}</td>
+          <td>${p.status === 'mastered' ? '⭐ Mastered' : 'In Progress'}</td>
+        </tr>`
+      )
+      .join('');
+
+    const noteLabel = role === 'therapist' ? 'Clinical Articulation Note' : 'Caregiver Home Practice Recommendation';
+    const noteBody = role === 'therapist' ? reportDate.clinicianNote : reportDate.parentActionTip;
+
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"><title>EchoSeed Daily Summary - ${reportDate.dateStr}</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #0f172a; padding: 32px; max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subtitle { color: #64748b; margin-bottom: 24px; }
+  .metrics { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .metric { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; }
+  .metric-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; }
+  .metric-value { font-size: 16px; font-weight: 800; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+  .note-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; }
+</style></head>
+<body>
+  <h1>EchoSeed Daily Practice Summary</h1>
+  <div class="subtitle">${reportDate.dateStr}</div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Minutes Practiced</div><div class="metric-value">${reportDate.minutesPracticed} mins</div></div>
+    <div class="metric"><div class="metric-label">Accuracy Rate</div><div class="metric-value">${reportDate.accuracyRate}</div></div>
+    <div class="metric"><div class="metric-label">Sounds Mastered Today</div><div class="metric-value">${reportDate.masteredCountToday}</div></div>
+    <div class="metric"><div class="metric-label">Emotion</div><div class="metric-value">${reportDate.emotionTheme}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Phoneme</th><th>Accuracy</th><th>Trials</th><th>Status</th></tr></thead>
+    <tbody>${phonemeRows}</tbody>
+  </table>
+  <div class="note-box"><strong>${noteLabel}:</strong><br>${noteBody}</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `echoseed-summary-${this.selectedReportDate || 'today'}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (window.appState) {
+      window.appState.showToast('📄 Daily Report Exported', 'Summary downloaded - open it and use your browser\'s "Print > Save as PDF" for a PDF copy.', 'unlock');
+    }
+    if (window.soundSFX) window.soundSFX.playCorrect();
   }
 
   renderEverydayReport() {
