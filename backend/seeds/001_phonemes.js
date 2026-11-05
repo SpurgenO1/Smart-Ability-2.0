@@ -117,7 +117,7 @@ exports.seed = async function seed(knex) {
 
   // Same reasoning as above for model_url/animation_url (no .glb or mouth-
   // animation assets exist). video_url does have real, playable content: the
-  // 5 generic demonstration clips shipped in assets/videos/, cycled across
+  // 5 generic demonstration clips shipped in frontend/assets/videos/, cycled across
   // every phoneme so "unlock content" / "push content" always resolves to a
   // real file served from the /media static mount.
   const DEMO_VIDEOS = ['vowel_1.mp4', 'vowel_2.mp4', 'vowel_3.mp4', 'asha.mp4', 'krishna.mp4'];

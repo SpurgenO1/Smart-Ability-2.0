@@ -7,7 +7,10 @@
 class EchoSeedApiClient {
   constructor(baseUrl) {
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'http://localhost:4000';
-    this.baseUrl = baseUrl || (origin.includes(':4000') ? `${origin}/api/v1` : 'http://localhost:4000/api/v1');
+    // The backend serves this site, so use its own origin. The fallback covers
+    // opening the page from a file or a separate local dev server.
+    const isSeparateLocalPage = origin === 'null' || (/\/\/(localhost|127\.0\.0\.1)(:|$)/.test(origin) && !origin.includes(':4000'));
+    this.baseUrl = baseUrl || `${isSeparateLocalPage ? 'http://localhost:4000' : origin}/api/v1`;
     this.accessToken = localStorage.getItem('echoseed_access_token') || null;
     this.refreshToken = localStorage.getItem('echoseed_refresh_token') || null;
     this.currentUser = JSON.parse(localStorage.getItem('echoseed_user') || 'null');

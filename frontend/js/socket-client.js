@@ -7,7 +7,9 @@
 class EchoSeedSocketClient {
   constructor(serverUrl) {
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'http://localhost:4000';
-    this.serverUrl = serverUrl || (origin.includes(':4000') ? origin : 'http://localhost:4000');
+    // Same rule as api-client.js: use the serving origin unless opened separately in local dev.
+    const isSeparateLocalPage = origin === 'null' || (/\/\/(localhost|127\.0\.0\.1)(:|$)/.test(origin) && !origin.includes(':4000'));
+    this.serverUrl = serverUrl || (isSeparateLocalPage ? 'http://localhost:4000' : origin);
     this.socket = null;
     this.isConnected = false;
     this.listeners = new Map();

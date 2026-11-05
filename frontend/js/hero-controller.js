@@ -412,7 +412,7 @@ class HeroPageController {
         if (apiErr.message && !apiErr.message.toLowerCase().includes('failed to fetch')) {
           errorMsg = apiErr.message;
         } else if (apiErr.message && apiErr.message.toLowerCase().includes('failed to fetch')) {
-          errorMsg = 'Cannot reach backend at http://localhost:4000. Please ensure the backend is running (run `npm start` in backend/ directory).';
+          errorMsg = 'Cannot reach the server. Please check your connection and try again.';
         }
 
         alert(`🔒 Authentication Denied:\n${errorMsg}\n\nPlease check your credentials or use the "Auto-fill Demo Account" button.`);
@@ -480,7 +480,7 @@ class HeroPageController {
         if (apiErr.code === 'EMAIL_IN_USE') {
           errorMsg = 'An account with this email already exists in the database. Please sign in instead.';
         } else if (apiErr.message && apiErr.message.toLowerCase().includes('failed to fetch')) {
-          errorMsg = 'Cannot reach backend at http://localhost:4000. Please ensure the backend is running with `npm start`.';
+          errorMsg = 'Cannot reach the server. Please check your connection and try again.';
         }
 
         alert(`❌ Registration Failed:\n${errorMsg}`);

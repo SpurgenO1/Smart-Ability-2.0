@@ -12,7 +12,7 @@ const { success } = require('../utils/apiResponse');
 const { ApiError } = require('../utils/errors');
 const storage = require('../config/storage');
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'audio');
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads', 'audio');
 
 function ensureUploadDir() {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });

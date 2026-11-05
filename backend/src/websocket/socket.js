@@ -31,7 +31,7 @@ async function resolveRoomsForUser(user) {
 function initSocket(server) {
   ioInstance = new Server(server, {
     path: '/ws',
-    cors: { origin: process.env.CORS_ORIGIN || '*' },
+    cors: { origin: process.env.CORS_ORIGIN || process.env.RENDER_EXTERNAL_URL || '*' },
   });
 
   ioInstance.use(async (socket, next) => {

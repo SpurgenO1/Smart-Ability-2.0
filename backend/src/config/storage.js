@@ -53,7 +53,7 @@ function verifySignature(fileId, expires, signature) {
  * user-recorded audio (see generateUploadUrl/generatePlaybackUrl above) goes
  * through that scheme. `key` may be a bare filename or a `dir/file` path;
  * only the basename is used, since the content library is served flat out of
- * /media (see app.js's static mount of assets/videos).
+ * /media (see app.js's static mount of frontend/assets/videos).
  */
 function publicMediaUrl(key) {
   if (!key) return null;
